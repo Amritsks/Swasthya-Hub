@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const User = require("./models/User");
 
 // 🔁 Replace with your MongoDB connection string
-const MONGO_URI = "mongodb://localhost:27017/swasthya";
+const MONGO_URI = `${process.env.MONGO_URI}swasthya`;
 
 const migrateAchievements = async () => {
   try {

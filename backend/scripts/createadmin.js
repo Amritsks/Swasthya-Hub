@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Admin = require("../models/Admin");
 
-mongoose.connect("mongodb://localhost:27017/swasthya")
+mongoose.connect(`${process.env.MONGO_URI}/swasthya`)
   .then(async () => {
     const admin = new Admin({
       email: "admin1@gmail.com",

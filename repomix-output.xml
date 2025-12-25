@@ -64,8 +64,10 @@ backend/routes/pharmacistDashboard.js
 backend/routes/prescriptions.js
 backend/routes/profile.js
 backend/routes/users.js
+backend/scripts/createadmin.js
 backend/scripts/createPharmacists.js
 backend/server.js
+frontend/.env
 frontend/.git/COMMIT_EDITMSG
 frontend/.git/config
 frontend/.git/description
@@ -117,7 +119,6 @@ frontend/src/screens/Dashboard.jsx
 frontend/src/screens/Doctor.jsx
 frontend/src/screens/Lab.jsx
 frontend/src/screens/Login.jsx
-frontend/src/screens/Onboarding.jsx
 frontend/src/screens/PharmacistLogin.jsx
 frontend/src/screens/PharmacyAdmin.jsx
 frontend/src/screens/Profile.jsx
@@ -132,1250 +133,8 @@ package.json
 <files>
 This section contains the contents of the repository's files.
 
-<file path="backend/.env">
-# Backend server port
-PORT=5000
-
-# MongoDB connection string (replace <user> and <pass> with your Atlas credentials)
-MONGO_URI= mongodb://localhost:27017/swasthya
-
-# JWT secret for authentication
-JWT_SECRET=supersecretkey123!@#456
-
-# Frontend URL (used for CORS)
-FRONTEND_URL=http://localhost:5173
-</file>
-
-<file path="backend/config/db.js">
-// backend/db.js
-const mongoose = require("mongoose");
-
-const connectDB = async () => {
-  try {
-    await mongoose.connect("mongodb://127.0.0.1:27017/swasthya_hub", {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("MongoDB connected");
-  } catch (err) {
-    console.error("MongoDB connection failed:", err.message);
-    process.exit(1);
-  }
-};
-
-module.exports = connectDB;
-</file>
-
-<file path="backend/index.html">
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Swasthya Hub</title>
-    <!-- <link rel="stylesheet" href="style.css"> -->
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
-</file>
-
-<file path="backend/middleware/adminAuth.js">
-const jwt = require("jsonwebtoken");
-
-module.exports = (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: "No token" });
-
-  const token = auth.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== "admin")
-      return res.status(403).json({ message: "Access denied" });
-    req.admin = decoded;
-    next();
-  } catch (e) {
-    res.status(401).json({ message: "Invalid token" });
-  }
-};
-</file>
-
-<file path="backend/middleware/auth.js">
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Pharmacist = require('../models/pharmacist');
-
-module.exports = async (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ error: 'No token' });
-
-  const token = auth.split(' ')[1];
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Example: check if payload type is pharmacist or user (customize as needed)
-    if (payload.userId) {
-      // For pharmacist use userId
-      const pharmacist = await Pharmacist.findOne({ userId: payload.userId });
-      if (!pharmacist) return res.status(401).json({ error: 'Invalid token' });
-      req.pharmacist = pharmacist;
-    } else if (payload.id) {
-      // For existing users with id
-      const user = await User.findById(payload.id);
-      if (!user) return res.status(401).json({ error: 'Invalid token' });
-      req.user = user;
-    } else {
-      return res.status(401).json({ error: 'Invalid token payload' });
-    }
-
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Auth failed' });
-  }
-};
-</file>
-
-<file path="backend/migrateAddAchievements.js">
-// migrateAddAchievements.js
-const mongoose = require("mongoose");
-const User = require("./models/User");
-
-// 🔁 Replace with your MongoDB connection string
-const MONGO_URI = "mongodb://localhost:27017/swasthya";
-
-const migrateAchievements = async () => {
-  try {
-    await mongoose.connect(MONGO_URI);
-    console.log("✅ Connected to MongoDB");
-
-    // Find users without achievements field
-    const users = await User.find({ achievements: { $exists: false } });
-
-    if (users.length === 0) {
-      console.log("🎉 All users already have the 'achievements' field!");
-      return process.exit(0);
-    }
-
-    // Add empty achievements array for all users missing it
-    const updateResult = await User.updateMany(
-      { achievements: { $exists: false } },
-      { $set: { achievements: [] } }
-    );
-
-    console.log(
-      `✅ Migration complete! Updated ${updateResult.modifiedCount} users.`
-    );
-
-    process.exit(0);
-  } catch (err) {
-    console.error("❌ Migration failed:", err);
-    process.exit(1);
-  }
-};
-
-migrateAchievements();
-</file>
-
-<file path="backend/models/Admin.js">
-// backend/models/Admin.js
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-
-const adminSchema = new mongoose.Schema({
-  email: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
-});
-
-adminSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-adminSchema.methods.comparePassword = function (candidate) {
-  return bcrypt.compare(candidate, this.password);
-};
-
-module.exports = mongoose.model("Admin", adminSchema);
-</file>
-
-<file path="backend/models/BloodRequest.js">
-// backend/models/BloodRequest.js
-const mongoose = require("mongoose");
-
-const BloodRequestSchema = new mongoose.Schema(
-  {
-    group: {
-      type: String,
-      required: true,
-    },
-    units: {
-      type: Number,
-      required: true,
-    },
-    location: {
-      name: { type: String, required: true },
-      lat: { type: Number, required: false },
-      lng: { type: Number, required: false },
-    },
-    requester: {
-      type: String,
-      required: true,
-    },
-    donor: {
-      type: String,
-      default: null,
-    },
-    donorName: {
-      type: String,
-      default: null,
-    },
-    donorPhone: {
-      type: String,
-      default: null,
-    },
-    donorCode: {
-      type: String,
-      default: null,
-    },
-    status: {
-      type: String,
-      enum: ["open", "accepted", "completed"],
-      default: "open",
-    },
-    meetingTime: {
-      type: String,
-      default: null,
-    },
-  },
-  { timestamps: true }
-);
-
-// TTL index: automatically delete document 24 hours after creation
-BloodRequestSchema.index({ createdAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 });
-
-module.exports = mongoose.model("BloodRequest", BloodRequestSchema);
-</file>
-
-<file path="backend/models/Donation.js">
-// backend/models/Donation.js
-const mongoose = require('mongoose');
-
-const donationSchema = new mongoose.Schema({
-  request: { type: mongoose.Schema.Types.ObjectId, ref: 'BloodRequest', required: true },
-  donor: { type: String, required: true }, // Changed to String (email)
-  receiver: { type: String, required: true }, // Changed to String (email)
-  status: { type: String, enum: ['pending','completed'], default: 'pending' },
-  confirmationCode: { type: String },
-}, { timestamps: true });
-
-module.exports = mongoose.model('Donation', donationSchema);
-</file>
-
-<file path="backend/models/pharmacist.js">
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-
-const pharmacistSchema = new mongoose.Schema({
-  userId: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
-});
-
-pharmacistSchema.pre("save", async function(next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-pharmacistSchema.methods.comparePassword = function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-module.exports = mongoose.model("Pharmacist", pharmacistSchema);
-</file>
-
-<file path="backend/models/prescription.js">
-// backend/models/prescription.js
-const mongoose = require("mongoose");
-const prescriptionSchema = new mongoose.Schema({
-  userName: { type: String, required: true },
-  userEmail: { type: String, required: true },
-  filename: String,
-  originalname: String,
-  date: { type: Date, default: Date.now }
-});
-module.exports = mongoose.model("Prescription", prescriptionSchema);
-</file>
-
-<file path="backend/models/User.js">
-// backend/models/User.js
-const mongoose = require("mongoose");
-
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    email: { type: String, unique: true, sparse: true },
-    phone: { type: String, unique: true, sparse: true },
-    password: { type: String, required: true },
-    age: { type: Number },
-    gender: { type: String },
-    bloodGroup: { type: String },
-    height: { type: String },
-    weight: { type: String },
-    allergies: { type: String },
-    medicalConditions: { type: String },
-    medications: { type: String },
-    fathername: { type: String },
-    mothername: { type: String },
-    emergencyContact: {
-      name: { type: String },
-      phone: { type: String },
-      relation: { type: String },
-    },
-
-    // ✅ New field: Blood Donation Achievements
-    achievements: [
-      {
-        title: { type: String, default: "Blood Donation" },
-        date: { type: Date, default: Date.now },
-        donorCode: { type: String },
-        location: { type: String },
-      },
-    ],
-  },
-  { timestamps: true }
-);
-
-module.exports = mongoose.model("User", userSchema);
-</file>
-
-<file path="backend/models/UserProfile.js">
-// backend/models/UserProfile.js
-const mongoose = require("mongoose");
-
-const userProfileSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  name: String,
-  age: Number,
-  gender: String,
-  bloodGroup: String,
-  height: String,
-  weight: String,
-  allergies: String,
-  medicalConditions: String,
-  medications: String,
-  fathername: String,
-  mothername: String,
-  emergencyContact: {
-    name: String,
-    phone: String,
-    relation: String,
-  },
-
-  // ✅ NEW: Track user's donation achievements
-  achievements: [
-    {
-      title: { type: String, default: "Blood Donation" },
-      date: { type: Date, default: Date.now },
-      donorCode: { type: String },
-      location: { type: String },
-    },
-  ],
-});
-
-module.exports = mongoose.model("UserProfile", userProfileSchema);
-</file>
-
-<file path="backend/package.json">
-{
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "node scripts/createPharmacists.js && nodemon server.js",
-    "create-pharmacists": "node scripts/createPharmacists.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
-    "express": "^5.1.0",
-    "gridfs-stream": "^1.1.1",
-    "jsonwebtoken": "^9.0.2",
-    "mime": "^4.1.0",
-    "mime-types": "^3.0.1",
-    "mongoose": "^8.18.2",
-    "multer": "^2.0.2",
-    "socket.io": "^4.8.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
-}
-</file>
-
-<file path="backend/README.md">
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-</file>
-
-<file path="backend/routes/adminAuth.js">
-// backend/routes/adminAuth.js
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const Admin = require("../models/Admin");
-const router = express.Router();
-
-// Register admin (run once manually or via script)
-router.post("/register", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const existing = await Admin.findOne({ email });
-    if (existing) return res.status(400).json({ message: "Admin exists" });
-    const admin = new Admin({ email, password });
-    await admin.save();
-    res.status(201).json({ message: "Admin created" });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Login admin
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(400).json({ message: "Invalid credentials" });
-    const isMatch = await admin.comparePassword(password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
-
-    const token = jwt.sign({ id: admin._id, role: "admin" }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    res.json({ token });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/adminPanel.js">
-const express = require("express");
-const User = require("../models/User");
-const BloodRequest = require("../models/BloodRequest");
-const Donation = require("../models/Donation");
-const Pharmacist = require("../models/pharmacist");
-const adminAuth = require("../middleware/adminAuth");
-
-const router = express.Router();
-
-// Get all users
-router.get("/users", adminAuth, async (req, res) => {
-  const users = await User.find().select("-password");
-  res.json(users);
-});
-
-// Get all blood requests
-router.get("/requests", adminAuth, async (req, res) => {
-  const requests = await BloodRequest.find();
-  res.json(requests);
-});
-
-// Get all donations
-router.get("/donations", adminAuth, async (req, res) => {
-  const donations = await Donation.find().populate("request");
-  res.json(donations);
-});
-
-// Get all pharmacists
-router.get("/pharmacists", adminAuth, async (req, res) => {
-  const pharmacists = await Pharmacist.find().select("-password");
-  res.json(pharmacists);
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/auth.js">
-// backend/routes/auth.js
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User.js");
-
-const router = express.Router();
-
-// =========================
-// REGISTER ROUTE
-// =========================
-router.post("/register", async (req, res) => {
-  try {
-    const { name, email, phone, password, bloodGroup, age } = req.body;
-
-    // Trim values
-    if (name) req.body.name = name.trim();
-    if (email) req.body.email = email.trim();
-    if (phone) req.body.phone = phone.trim();
-    if (bloodGroup) req.body.bloodGroup = bloodGroup.trim();
-
-    // Validation
-    if (!name || !password || !bloodGroup || !age || (!email && !phone)) {
-      return res
-        .status(400)
-        .json({ error: "Name, password, blood group, age and either email or phone are required" });
-    }
-
-    // Check if user exists (by email OR phone)
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phone }],
-    });
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists with this email or phone" });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      name,
-      email: email || null,
-      phone: phone || null,
-      password: hashedPassword,
-      bloodGroup,
-      age,
-    });
-
-    await user.save();
-
-    return res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error("Register error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// =========================
-// LOGIN ROUTE
-// =========================
-router.post("/login", async (req, res) => {
-  try {
-    const { email, phone, password } = req.body;
-
-    // Trim values
-    if (email) req.body.email = email.trim();
-    if (phone) req.body.phone = phone.trim();
-
-    // Validation
-    if ((!email && !phone) || !password) {
-      return res.status(400).json({ error: "Provide email or phone and password" });
-    }
-
-    // Check user existence (by email OR phone)
-    const user = await User.findOne({
-      $or: [{ email }, { phone }],
-    });
-    if (!user) return res.status(400).json({ error: "Invalid credentials" });
-
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
-
-    // Sign JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    // Send only safe user info
-    const { password: _, ...userData } = user._doc;
-
-    return res.json({ token, user: userData });
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/bloodRoutes.js">
-// backend/routes/bloodRoutes.js
-const express = require("express");
-const BloodRequest = require("../models/BloodRequest.js");
-const Donation = require("../models/Donation.js");
-const UserProfile = require("../models/UserProfile.js");
-
-const router = express.Router();
-
-// --------------------- GET all blood requests ---------------------
-router.get("/", async (req, res) => {
-  try {
-    const requests = await BloodRequest.find();
-    res.status(200).json(requests);
-  } catch (err) {
-    console.error("Fetch error:", err);
-    res.status(500).json({ message: "Server error while fetching requests" });
-  }
-});
-
-// --------------------- POST create a new blood request ---------------------
-router.post("/request", async (req, res) => {
-  try {
-    const { group, units, locationName, lat, lng, requesterEmail } = req.body;
-
-    if (!group || !units || !locationName || !requesterEmail) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const newRequest = new BloodRequest({
-      group,
-      units,
-      location: {
-        name: locationName,
-        lat: lat || null,
-        lng: lng || null,
-      },
-      requester: requesterEmail,
-    });
-
-    const savedRequest = await newRequest.save();
-    res.status(201).json(savedRequest);
-  } catch (err) {
-    console.error("Create request error:", err);
-    res.status(500).json({ message: "Server error while creating request" });
-  }
-});
-
-// --------------------- PUT accept a blood request ---------------------
-router.put("/:requestId/accept", async (req, res) => {
-  try {
-    const { requestId } = req.params;
-    const { donorEmail, donorCode, donorName, donorPhone } = req.body;
-
-    if (!donorEmail || !donorCode) {
-      return res.status(400).json({ message: "Donor email and code are required" });
-    }
-
-    const request = await BloodRequest.findById(requestId);
-    if (!request) return res.status(404).json({ message: "Request not found" });
-
-    if (request.status !== "open") {
-      return res.status(400).json({ message: "Request already accepted or completed" });
-    }
-
-    // Update blood request info
-    request.status = "accepted";
-    request.donor = donorEmail;
-    request.donorName = donorName;
-    request.donorPhone = donorPhone;
-    request.donorCode = donorCode;
-    const updatedRequest = await request.save();
-
-    // Create a donation record
-    const donation = new Donation({
-      request: requestId,
-      donor: donorEmail,
-      receiver: request.requester,
-      status: "pending",
-      confirmationCode: donorCode,
-    });
-    await donation.save();
-
-    res.json({
-      message: "Request accepted successfully",
-      updatedRequest,
-      donation,
-    });
-  } catch (err) {
-    console.error("Accept error:", err);
-    res.status(500).json({ message: "Server error while accepting request" });
-  }
-});
-
-// --------------------- ✅ POST confirm donation (by requester) ---------------------
-router.post("/confirmDonation/:requestId", async (req, res) => {
-  try {
-    const { requestId } = req.params;
-    const request = await BloodRequest.findById(requestId);
-
-    if (!request) return res.status(404).json({ message: "Request not found" });
-
-    // Prevent re-confirmation
-    if (request.status === "completed") {
-      return res.status(400).json({ message: "Donation already confirmed" });
-    }
-    if (request.status !== "accepted") {
-      return res.status(400).json({ message: "Request not yet accepted" });
-    }
-
-    // Generate donor code if missing
-    const donorCode =
-      request.donorCode ||
-      "DONOR-" + Math.random().toString(36).substr(2, 8).toUpperCase();
-
-    // Update request status
-    request.status = "completed";
-    request.donationConfirmed = true;
-    request.donorCode = donorCode;
-    await request.save();
-
-    // Update matching donation record
-    const donation = await Donation.findOne({ request: requestId });
-    if (donation) {
-      donation.status = "completed";
-      donation.completedAt = new Date();
-      await donation.save();
-    }
-
-    // ✅ Update donor's UserProfile with achievement
-    let donorProfile = await UserProfile.findOne({ email: request.donor });
-    if (!donorProfile) {
-      donorProfile = new UserProfile({
-        email: request.donor,
-        achievements: [],
-      });
-    }
-
-    const achievement = {
-      title: "Blood Donation",
-      date: new Date(),
-      donorCode,
-      location: request.location?.name || "Unknown Location",
-    };
-
-    donorProfile.achievements.push(achievement);
-    await donorProfile.save();
-
-    return res.status(200).json({
-      message: "Donation confirmed and achievement added successfully!",
-      donorCode,
-      achievement,
-    });
-  } catch (err) {
-    console.error("Donation confirmation error:", err);
-    res.status(500).json({ message: "Server error while confirming donation" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/pharmacistAuth.js">
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const Pharmacist = require("../models/pharmacist");
-
-const router = express.Router();
-
-// backend/routes/pharmacistAuth.js
-router.post("/login", async (req, res) => {
-  const { userId, password } = req.body;
-  const pharmacist = await Pharmacist.findOne({ userId });
-  if (!pharmacist)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-  const isMatch = await pharmacist.comparePassword(password);
-  if (!isMatch)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-  const token = jwt.sign({ userId: pharmacist.userId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-  res.json({ token, userId: pharmacist.userId });
-});
-
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/pharmacistDashboard.js">
-const express = require('express');
-const router = express.Router();
-const Prescription = require('../models/prescription');
-const authMiddleware = require('../middleware/auth');
-
-// Get logged-in pharmacist info
-router.get('/me', authMiddleware, (req, res) => {
-  res.json({ userId: req.pharmacist.userId }); // Adjust pharmacist user object accordingly
-});
-
-// Get prescriptions assigned to logged-in pharmacist
-router.get('/prescriptions', authMiddleware, async (req, res) => {
-  try {
-    const prescriptions = await Prescription.find({ pharmacistUserId: req.pharmacist.userId });
-    res.json(prescriptions);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Accept a prescription
-router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
-
-    prescription.status = 'accepted';
-    await prescription.save();
-    res.json({ message: 'Prescription accepted' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Reject a prescription
-router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
-
-    prescription.status = 'rejected';
-    await prescription.save();
-    res.json({ message: 'Prescription rejected' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/prescriptions.js">
-const express = require("express");
-const multer = require("multer");
-const Prescription = require("../models/prescription");
-const auth = require("../middleware/auth");
-const mongoose = require("mongoose");
-
-const upload = multer({ storage: multer.memoryStorage() });
-const router = express.Router();
-
-let bucket;
-mongoose.connection.once("open", () => {
-  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-    bucketName: "prescriptions"
-  });
-});
-
-// Upload prescription image
-router.post("/", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-
-    const { originalname, buffer, mimetype } = req.file;
-    const { userName, userEmail } = req.body;
-
-    if (!userName || !userEmail) {
-      return res.status(400).json({ message: "User name and email required" });
-    }
-
-    const uploadStream = bucket.openUploadStream(originalname, {
-      contentType: mimetype
-    });
-
-    uploadStream.end(buffer);
-
-    uploadStream.on("finish", async () => {
-      const newPrescription = new Prescription({
-        originalname,
-        filename: originalname,
-        userName,
-        userEmail,
-        date: new Date(),
-        status: "pending"
-      });
-      await newPrescription.save();
-      res.json({ message: "Prescription uploaded and stored in MongoDB GridFS successfully!" });
-    });
-
-    uploadStream.on("error", (err) => {
-      console.error(err);
-      res.status(500).json({ message: "Failed to upload." });
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to upload." });
-  }
-});
-
-// Get prescriptions list (protected)
-router.get("/", auth, async (req, res) => {
-  try {
-    const prescriptions = await Prescription.find();
-    res.json(prescriptions);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch prescriptions." });
-  }
-});
-
-// Serve prescription image
-router.get("/image/:filename", async (req, res) => {
-  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
-
-  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
-
-  downloadStream.on("error", () => res.status(404).send("File not found"));
-
-  res.set("Content-Type", "image/jpeg");
-  downloadStream.pipe(res);
-});
-
-// Confirm prescription by pharmacist with medicines data
-router.put("/:id/confirm", auth, async (req, res) => {
-  const { allPresent, medicines } = req.body;
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) {
-      return res.status(404).json({ message: "Prescription not found." });
-    }
-    prescription.status = "confirmed";
-    prescription.confirmation = { allPresent, medicines };
-    await prescription.save();
-
-    // Emit real-time notification if socket.io is available
-    const io = req.app.get("io");
-    if (io) {
-      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
-        prescriptionId: prescription._id,
-        allPresent,
-        medicines,
-        message: allPresent
-          ? "All medicines available"
-          : `Available medicines: ${medicines.join(", ")}`
-      });
-    }
-
-    res.json({ message: "Prescription confirmed!", confirmed: prescription.confirmation });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Prescription confirmation failed." });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/profile.js">
-// backend/routes/profile.js
-const express = require("express");
-const UserProfile = require("../models/UserProfile.js");
-
-const router = express.Router();
-
-/**
- * GET /api/profile/:email
- * Fetch user profile by email
- */
-router.get("/:email", async (req, res) => {
-  try {
-    const { email } = req.params;
-    if (!email) return res.status(400).json({ msg: "Email is required" });
-
-    const profile = await UserProfile.findOne({ email });
-
-    if (!profile) {
-      // Return default empty profile structure if not found
-      return res.json({
-        email,
-        name: "",
-        age: "",
-        gender: "",
-        bloodGroup: "",
-        height: "",
-        weight: "",
-        allergies: "",
-        medicalConditions: "",
-        medications: "",
-        fathername: "",
-        mothername: "",
-        emergencyContact: {
-          name: "",
-          phone: "",
-          relation: "",
-        },
-        achievements: [], // ✅ fixed (no undefined variable)
-      });
-    }
-
-    // ✅ Ensure achievements always exist
-    if (!profile.achievements) profile.achievements = [];
-
-    res.status(200).json(profile);
-  } catch (err) {
-    console.error("Profile fetch error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-/**
- * POST /api/profile/:email
- * Update or create profile by email
- */
-router.post("/:email", async (req, res) => {
-  try {
-    const { email } = req.params;
-    if (!email) return res.status(400).json({ msg: "Email is required" });
-
-    const profileData = req.body;
-    profileData.email = email;
-
-    const updatedProfile = await UserProfile.findOneAndUpdate(
-      { email },
-      { $set: profileData },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-      }
-    );
-
-    res.status(200).json(updatedProfile);
-  } catch (err) {
-    console.error("Profile update error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-/**
- * POST /api/profile
- * Alternative endpoint using email in body
- */
-router.post("/", async (req, res) => {
-  try {
-    const { email, ...profileData } = req.body;
-    if (!email) return res.status(400).json({ msg: "Email is required" });
-
-    const updatedProfile = await UserProfile.findOneAndUpdate(
-      { email },
-      { $set: { ...profileData, email } },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-      }
-    );
-
-    res.status(200).json(updatedProfile);
-  } catch (err) {
-    console.error("Profile save error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/users.js">
-import mongoose from "mongoose";
-
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: { type: String, unique: true },
-  password: String,
-  location: {
-    lat: Number,
-    lng: Number,
-  },
-});
-
-export default mongoose.model("User", userSchema);
-</file>
-
-<file path="backend/scripts/createPharmacists.js">
-const mongoose = require('mongoose');
-const Pharmacist = require('../models/pharmacist'); // adjust path as needed
-
-mongoose.connect('mongodb://localhost:27017/swasthya');
-
-const pharmacists = [
-  // { userId: "Amrit", password: "Amrit@123" },
-  { userId: "Nishant", password: "Nishant@123" },
-  { userId: "Dipu", password: "Dalla@123" }
-];
-
-(async () => {
-  for (const user of pharmacists) {
-    const exists = await Pharmacist.findOne({ userId: user.userId });
-    if (!exists) {
-      const pharmacist = new Pharmacist(user);
-      await pharmacist.save();
-      console.log(`Created pharmacist ${user.userId}`);
-    } else {
-      console.log(`UserId ${user.userId} already exists, skipping.`);
-    }
-  }
-  console.log("All pharmacist creation attempts complete!");
-  mongoose.disconnect();
-})();
-</file>
-
-<file path="backend/server.js">
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
-const mime = require("mime-types");
-const Grid = require("gridfs-stream");
-const http = require("http");
-const { Server } = require("socket.io");
-
-// Importing routes
-const authRoutes = require("./routes/auth.js");
-const bloodRequestRoutes = require("./routes/bloodRoutes.js");
-const profileRoutes = require("./routes/profile.js");
-const prescriptionRoutes = require("./routes/prescriptions");
-const pharmacistAuthRoutes = require("./routes/pharmacistAuth.js");
-const pharmacistDashboardRoutes = require("./routes/pharmacistDashboard");
-
-// ✅ Newly added admin routes
-const adminAuthRoutes = require("./routes/adminAuth.js");
-const adminPanelRoutes = require("./routes/adminPanel.js");
-
-dotenv.config();
-
-const app = express();
-const server = http.createServer(app);
-
-// Setup socket.io with proper CORS
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
-    credentials: true,
-  },
-});
-
-app.set("io", io);
-
-io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
-  socket.on("identify", ({ userId }) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined their personal room`);
-  });
-});
-
-// Middleware
-app.use(express.json());
-
-// Global CORS config
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "http://localhost:5173"],
-    credentials: true,
-  })
-);
-
-// MongoDB connection and GridFS initialization
-let gfs;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/swasthya";
-
-mongoose
-  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    const conn = mongoose.connection;
-    gfs = Grid(conn.db, mongoose.mongo);
-    gfs.collection("prescriptions");
-    console.log("✅ MongoDB connected and GridFS initialized");
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-    process.exit(1);
-  });
-
-// ==========================
-// 🔗 ROUTE MIDDLEWARES
-// ==========================
-app.use("/api/auth", authRoutes); // user auth
-app.use("/api/requests", bloodRequestRoutes); // blood requests
-app.use("/api/profile", profileRoutes); // user profiles
-app.use("/api/prescriptions", prescriptionRoutes); // prescriptions upload/view
-app.use("/api/pharmacist", pharmacistDashboardRoutes); // pharmacist dashboard
-app.use("/api/pharmacist-auth", pharmacistAuthRoutes); // pharmacist login
-
-// ✅ Admin routes
-app.use("/api/admin", adminAuthRoutes); // /api/admin/login & /api/admin/register
-app.use("/api/admin-panel", adminPanelRoutes); // protected admin operations
-
-// ==========================
-// 🗂️ STATIC + FILE STREAMING
-// ==========================
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Stream prescription images from GridFS
-app.get("/api/prescriptions/image/:filename", (req, res) => {
-  if (!gfs) {
-    return res.status(500).send("GridFS not initialized");
-  }
-
-  const filename = req.params.filename;
-
-  gfs.files.findOne({ filename }, (err, file) => {
-    if (err) {
-      console.error("Error finding file:", err);
-      return res.status(500).send("Server error");
-    }
-
-    if (!file || file.length === 0) {
-      return res.status(404).send("File not found");
-    }
-
-    const contentType =
-      file.contentType || mime.lookup(file.filename) || "application/octet-stream";
-    res.set("Content-Type", contentType);
-
-    const readstream = gfs.createReadStream(file.filename);
-
-    readstream.on("error", (err) => {
-      console.error("Readstream error:", err);
-      res.status(500).end("Error while streaming file");
-    });
-
-    readstream.pipe(res);
-  });
-});
-
-// ==========================
-// 🩺 HEALTH CHECK
-// ==========================
-app.get("/", (req, res) => {
-  res.send("✅ Swasthya Hub Backend is running successfully!");
-});
-
-// ==========================
-// ⚠️ GLOBAL ERROR HANDLER
-// ==========================
-app.use((err, req, res, next) => {
-  console.error("Server Error:", err.stack);
-  res.status(500).json({ message: err.message || "Internal Server Error" });
-});
-
-// ==========================
-// 🚀 SERVER START
-// ==========================
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+<file path="frontend/.env">
+VITE_BACKEND_URL=http://localhost:5000
 </file>
 
 <file path="frontend/.git/COMMIT_EDITMSG">
@@ -2440,6 +1199,7 @@ export default defineConfig([
   },
   "dependencies": {
     "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
     "lucide-react": "^0.544.0",
     "react": "^18.3.1",
     "react-confetti": "^6.4.0",
@@ -3313,7 +2073,7 @@ const Navbar = () => {
           <Link to="/login" className="text-gray-700 hover:text-blue-500 font-semibold">
             {translations[language].login}
           </Link>
-          <Link to="/pharmacy-admin" className="text-gray-700 hover:text-blue-500 font-semibold">Pharmacy Admin Panel</Link>
+          {/* <Link to="/pharmacy-admin" className="text-gray-700 hover:text-blue-500 font-semibold">Admin Panel</Link> */}
 
           {/* Language Dropdown */}
           <select
@@ -3356,7 +2116,7 @@ const Navbar = () => {
           <Link to="/login" className="text-gray-700 hover:text-blue-500 font-semibold">
             {translations[language].login}
           </Link>
-          <Link to="/pharmacy-admin">Pharmacy Admin Panel</Link>
+          {/* <Link to="/pharmacy-admin">Pharmacy Admin Panel</Link> */}
 
           {/* Language Dropdown in Mobile */}
           <select
@@ -3432,6 +2192,7 @@ export default AuthProvider;
 import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 
+
 export default function useSocket(userId) {
   const socketRef = useRef(null);
 
@@ -3439,7 +2200,7 @@ export default function useSocket(userId) {
     if (!userId) return;
 
     // Use VITE_API_URL environment variable or fallback to localhost
-    const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
     const socket = io(SOCKET_URL, { autoConnect: false });
 
     socketRef.current = socket;
@@ -3504,9 +2265,9 @@ export default function AdminDashboard() {
     const headers = { Authorization: `Bearer ${token}` };
 
     Promise.all([
-      axios.get("http://localhost:5000/api/admin-panel/users", { headers }),
-      axios.get("http://localhost:5000/api/admin-panel/requests", { headers }),
-      axios.get("http://localhost:5000/api/admin-panel/pharmacists", { headers }),
+      axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/users`, { headers }),
+      axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/requests`, { headers }),
+      axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists`, { headers }),
     ]).then(([u, r, p]) => {
       setData({ users: u.data, requests: r.data, pharmacists: p.data });
     });
@@ -3549,7 +2310,7 @@ export default function AdminLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/admin/login", { email, password });
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/admin/login`, { email, password });
       localStorage.setItem("adminToken", res.data.token);
       navigate("/admin/dashboard");
     } catch (err) {
@@ -3654,6 +2415,7 @@ const Aushadhi = () => {
   const [uploadStatus, setUploadStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [prescriptions, setPrescriptions] = useState([]);
+  const [selectedMedicines, setSelectedMedicines] = useState([]); // ✅ new state
 
   // Setup real-time socket connection for user notifications
   const socket = useSocket(user?.email);
@@ -3661,15 +2423,16 @@ const Aushadhi = () => {
   // Fetch prescriptions on mount and whenever user changes
   useEffect(() => {
     if (!user || !user.token) return;
-    axios.get("http://localhost:5000/api/prescriptions", {
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-    .then(res => {
-      setPrescriptions(res.data);
-    })
-    .catch(err => {
-      console.error(err);
-    });
+    axios
+      .get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      })
+      .then((res) => {
+        setPrescriptions(res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
   }, [user]);
 
   useEffect(() => {
@@ -3679,8 +2442,8 @@ const Aushadhi = () => {
 
     currentSocket.on("prescriptionConfirmed", (data) => {
       alert(data.message);
-      setPrescriptions(prev =>
-        prev.map(p =>
+      setPrescriptions((prev) =>
+        prev.map((p) =>
           p._id === data.prescriptionId
             ? {
                 ...p,
@@ -3702,9 +2465,10 @@ const Aushadhi = () => {
     };
   }, [socket, user]);
 
+  // Upload prescription file
   const handleFileChange = (e) => {
     setPrescription(e.target.files[0]);
-    setUploadStatus(""); // Reset status on new file select
+    setUploadStatus("");
   };
 
   const handleUpload = async () => {
@@ -3717,36 +2481,76 @@ const Aushadhi = () => {
     formData.append("userEmail", user.email);
 
     try {
-      await axios.post("http://localhost:5000/api/prescriptions", formData, {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setUploadStatus("Uploaded successfully!");
-      setPrescription(null); // Clear file input after upload
+      setPrescription(null);
     } catch (err) {
       console.error(err);
       setUploadStatus("Upload failed.");
     }
   };
 
+  // Static medicines (for now)
   const medicines = [
     { name: "Paracetamol", dosage: "500mg", steps: "Take 1 tablet every 6 hours after food" },
     { name: "Amoxicillin", dosage: "250mg", steps: "Take 1 capsule every 8 hours for 5 days" },
     { name: "Vitamin C", dosage: "500mg", steps: "Take 1 tablet daily after breakfast" },
     { name: "Vitamin D", dosage: "400mg", steps: "Take 1 tablet every 8 hours if pain persists" },
     { name: "Combiflame", dosage: "400mg", steps: "Take 1 tablet every 8 hours if pain persists" },
-    { name: "Ciplox eye drops", dosage: "400mg", steps: "Take 1 tablet every 8 hours if pain persists" },
+    { name: "Ciplox eye drops", dosage: "Apply 2 drops", steps: "Apply 2 drops twice daily" },
   ];
 
   const filteredMedicines = medicines.filter((medicine) =>
     medicine.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // ✅ Handle selecting medicine
+  const toggleSelectMedicine = (medicineName) => {
+    setSelectedMedicines((prev) =>
+      prev.includes(medicineName)
+        ? prev.filter((m) => m !== medicineName)
+        : [...prev, medicineName]
+    );
+  };
+
+  // ✅ Handle submitting selected medicines
+  const handleManualSubmit = async () => {
+    if (selectedMedicines.length === 0) {
+      return alert("Please select at least one medicine.");
+    }
+
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/manual`,
+        {
+          medicines: selectedMedicines,
+          userEmail: user.email,
+          userName: user.name,
+        },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      console.log("🔑 Current user token:", user?.token);
+      alert("✅ Medicine request submitted successfully!");
+      setSelectedMedicines([]);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to submit manual request.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-50 px-2 py-4 sm:px-6 md:px-10 lg:px-20 overflow-y-auto">
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3 sm:gap-0">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 text-center flex-1 break-words">
           Svasthya <span className="text-teal-600">Aushadhi</span>
         </h1>
+
+        {/* Upload Section */}
         <div className="flex flex-col sm:flex-row items-center gap-2">
           <label
             htmlFor="prescription-upload"
@@ -3757,7 +2561,6 @@ const Aushadhi = () => {
               id="prescription-upload"
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -3771,6 +2574,8 @@ const Aushadhi = () => {
           </button>
         </div>
       </div>
+
+      {/* Upload Status */}
       {uploadStatus && (
         <p
           className={`text-center mb-4 font-semibold ${
@@ -3781,7 +2586,8 @@ const Aushadhi = () => {
         </p>
       )}
 
-      <div className="mb-10 max-w-lg mx-auto">
+      {/* SEARCH BAR */}
+      <div className="mb-6 max-w-lg mx-auto">
         <input
           type="text"
           aria-label="Search medicine"
@@ -3792,43 +2598,72 @@ const Aushadhi = () => {
         />
       </div>
 
+      {/* MEDICINE LIST */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {filteredMedicines.length > 0 ? (
-          filteredMedicines.map((medicine, index) => (
-            <div
-              key={index}
-              className="bg-white shadow-md rounded-xl p-4 sm:p-6 flex flex-col justify-between hover:shadow-2xl h-full transition-shadow"
-            >
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700 break-words">
-                {medicine.name}
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-500 mt-2">{medicine.dosage}</p>
-              <p className="text-xs sm:text-sm text-gray-700 mt-3">{medicine.steps}</p>
-            </div>
-          ))
+          filteredMedicines.map((medicine, index) => {
+            const selected = selectedMedicines.includes(medicine.name);
+            return (
+              <div
+                key={index}
+                onClick={() => toggleSelectMedicine(medicine.name)}
+                className={`cursor-pointer bg-white shadow-md rounded-xl p-4 sm:p-6 flex flex-col justify-between hover:shadow-2xl h-full transition-all ${
+                  selected ? "ring-4 ring-teal-500" : ""
+                }`}
+              >
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700">
+                  {medicine.name}
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 mt-2">{medicine.dosage}</p>
+                <p className="text-xs sm:text-sm text-gray-700 mt-3">{medicine.steps}</p>
+              </div>
+            );
+          })
         ) : (
           <p className="col-span-full text-center text-gray-500">No medicines found.</p>
         )}
       </div>
 
-      {/* Render confirmed prescription info */}
+      {/* ✅ Submit Selected Medicines */}
+      {selectedMedicines.length > 0 && (
+        <div className="mt-6 text-center">
+          <p className="text-gray-700 mb-3">
+            Selected Medicines:{" "}
+            <span className="font-semibold text-teal-700">
+              {selectedMedicines.join(", ")}
+            </span>
+          </p>
+          <button
+            onClick={handleManualSubmit}
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Submit Selected Medicines
+          </button>
+        </div>
+      )}
+
+      {/* CONFIRMATION SECTION */}
       <div className="mt-10 max-w-3xl mx-auto">
         <h2 className="text-xl font-semibold mb-3">Prescription Confirmations</h2>
         {prescriptions.length === 0 && <p>No prescriptions found.</p>}
-        {prescriptions.map(p =>
+        {prescriptions.map((p) =>
           p.confirmation ? (
             <div key={p._id} className="bg-green-100 p-4 rounded mb-4">
-              <p><strong>Status:</strong> Confirmed</p>
               <p>
-                <strong>All Medicines Present:</strong> {p.confirmation.allPresent ? "Yes" : "No"}
+                <strong>Status:</strong> Confirmed
               </p>
-              {!p.confirmation.allPresent && p.confirmation.medicines.length > 0 && (
-                <ul className="list-disc list-inside ml-4">
-                  {p.confirmation.medicines.map((m, idx) => (
-                    <li key={idx}>{m}</li>
-                  ))}
-                </ul>
-              )}
+              <p>
+                <strong>All Medicines Present:</strong>{" "}
+                {p.confirmation.allPresent ? "Yes" : "No"}
+              </p>
+              {!p.confirmation.allPresent &&
+                p.confirmation.medicines.length > 0 && (
+                  <ul className="list-disc list-inside ml-4">
+                    {p.confirmation.medicines.map((m, idx) => (
+                      <li key={idx}>{m}</li>
+                    ))}
+                  </ul>
+                )}
             </div>
           ) : null
         )}
@@ -4079,8 +2914,8 @@ const Dashboard = ({ user }) => {
     { name: "Aushadhi", route: "/aushadhi", color: "bg-teal-100", hover: "hover:shadow-lg hover:-translate-y-1" },
     { name: "Suraksha", route: "/suraksha", color: "bg-orange-200", hover: "hover:shadow-lg hover:-translate-y-1" },
     { name: "Raksha", route: "/raksha", color: "bg-white", hover: "hover:shadow-lg hover:-translate-y-1" },
-    { name: "Doctor", route: "/doctor", color: "bg-lime-100", hover: "hover:shadow-lg hover:-translate-y-1" },
-    { name: "Lab Test", route: "/labtest", color: "bg-blue-200", hover: "hover:shadow-lg hover:-translate-y-1" },
+    // { name: "Doctor", route: "/doctor", color: "bg-lime-100", hover: "hover:shadow-lg hover:-translate-y-1" },
+    // { name: "Lab Test", route: "/labtest", color: "bg-blue-200", hover: "hover:shadow-lg hover:-translate-y-1" },
     { name: "AI Health Assist", route: "/healthassist", color: "bg-green-200", hover: "hover:shadow-lg hover:-translate-y-1" },
   ];
 
@@ -4320,8 +3155,8 @@ const Login = () => {
         };
 
     const url = isLogin
-      ? "http://localhost:5000/api/auth/login"
-      : "http://localhost:5000/api/auth/register";
+      ? `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`
+      : `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`;
 
     try {
       const res = await axios.post(url, payload);
@@ -4487,20 +3322,6 @@ const Login = () => {
 export default Login;
 </file>
 
-<file path="frontend/src/screens/Onboarding.jsx">
-import React from "react";
-
-const Onboarding = ({ onContinue }) => {
-  return (
-     <div>
-      <div className="bg-[aquamarine] font-mullish">Onboarding page</div>
-     </div>
-  );
-};
-
-export default Onboarding;
-</file>
-
 <file path="frontend/src/screens/PharmacistLogin.jsx">
 import React, { useState } from "react";
 import axios from "axios";
@@ -4514,7 +3335,7 @@ const PharmacistLogin = () => {
 
   const handleLogin = async () => {
     try {
-      const res = await await axios.post("http://localhost:5000/api/pharmacist-auth/login", { userId, password })
+      const res = await await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/pharmacist-auth/login`, { userId, password })
       localStorage.setItem("pharmacistToken", res.data.token);
       navigate("/pharmacy-admin");
     } catch {
@@ -4570,9 +3391,10 @@ const PharmacyAdmin = () => {
       navigate("/pharmacist-login");
       return;
     }
+
     const fetchPharmacistInfo = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/pharmacist/me", {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPharmacistName(res.data.userId);
@@ -4584,7 +3406,7 @@ const PharmacyAdmin = () => {
 
     const fetchPrescriptions = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/prescriptions", {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPrescriptions(res.data);
@@ -4618,7 +3440,6 @@ const PharmacyAdmin = () => {
   };
 
   const addMedicineField = () => setManualMedicines([...manualMedicines, ""]);
-  
   const removeMedicineField = (index) =>
     setManualMedicines(manualMedicines.filter((_, i) => i !== index));
 
@@ -4626,23 +3447,24 @@ const PharmacyAdmin = () => {
     const token = localStorage.getItem("pharmacistToken");
     try {
       await axios.put(
-        `http://localhost:5000/api/prescriptions/${selectedPrescription._id}/confirm`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${selectedPrescription._id}/confirm`,
         {
           allPresent,
-          medicines: allPresent ? [] : manualMedicines.filter(m => m.trim() !== ""),
+          medicines: allPresent ? [] : manualMedicines.filter((m) => m.trim() !== ""),
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Update local state after confirmation to reflect immediately
-      setPrescriptions(prev =>
-        prev.map(p =>
+
+      // Update UI immediately
+      setPrescriptions((prev) =>
+        prev.map((p) =>
           p._id === selectedPrescription._id
             ? {
                 ...p,
                 status: "confirmed",
                 confirmation: {
                   allPresent,
-                  medicines: allPresent ? [] : manualMedicines.filter(m => m.trim() !== ""),
+                  medicines: allPresent ? [] : manualMedicines.filter((m) => m.trim() !== ""),
                 },
               }
             : p
@@ -4659,14 +3481,14 @@ const PharmacyAdmin = () => {
     const token = localStorage.getItem("pharmacistToken");
     try {
       await axios.put(
-        `http://localhost:5000/api/prescriptions/${id}/reject`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setPrescriptions(prev =>
-        prev.map(p => (p._id === id ? { ...p, status: "rejected" } : p))
+      setPrescriptions((prev) =>
+        prev.map((p) => (p._id === id ? { ...p, status: "rejected" } : p))
       );
     } catch (error) {
       console.error(error);
@@ -4675,29 +3497,63 @@ const PharmacyAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 md:p-6 bg-gray-50 relative">
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-center break-words">
+    <div className="min-h-screen p-4 md:p-6 bg-gray-50 relative">
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-center">
         Welcome, {pharmacistName}
       </h1>
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {prescriptions.map((p) => (
           <div
             key={p._id}
-            className="bg-white p-3 sm:p-4 rounded shadow flex flex-col justify-between h-full"
+            className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition-shadow flex flex-col justify-between h-full"
           >
-            <div className="space-y-1 sm:space-y-2 mb-3">
-              <p className="truncate">
-                <span className="font-semibold">Filename:</span>{" "}
-                <a
-                  href={`http://localhost:5000/api/prescriptions/image/${p.filename}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 underline break-all"
-                  tabIndex="0"
-                >
-                  {p.originalname}
-                </a>
-              </p>
+            {/* Badge */}
+            <p
+              className={`text-xs px-2 py-1 rounded-full mb-2 w-fit ${
+                p.type === "manual"
+                  ? "bg-teal-100 text-teal-700"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {p.type === "manual" ? "Manual Request" : "Uploaded Prescription"}
+            </p>
+
+            {/* Basic Info */}
+            <div className="space-y-2 mb-3">
+              {p.type === "upload" ? (
+                <>
+                  <p className="truncate">
+                    <span className="font-semibold">Filename:</span>{" "}
+                    {p.filename ? (
+                      <a
+                        href={`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/image/${p.filename}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline break-all"
+                      >
+                        {p.originalname}
+                      </a>
+                    ) : (
+                      <span className="text-gray-500">N/A</span>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold">Medicines Requested:</p>
+                  {p.medicines && p.medicines.length > 0 ? (
+                    <ul className="list-disc list-inside text-gray-700 text-sm">
+                      {p.medicines.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No medicines listed</p>
+                  )}
+                </>
+              )}
+
               <p className="break-words">
                 <span className="font-semibold">User Email:</span> {p.userEmail}
               </p>
@@ -4706,21 +3562,34 @@ const PharmacyAdmin = () => {
                 {new Date(p.date).toLocaleString()}
               </p>
               <p>
-                <span className="font-semibold">Status:</span> {p.status || "pending"}
+                <span className="font-semibold">Status:</span>{" "}
+                <span
+                  className={`font-semibold ${
+                    p.status === "confirmed"
+                      ? "text-green-600"
+                      : p.status === "rejected"
+                      ? "text-red-600"
+                      : "text-yellow-600"
+                  }`}
+                >
+                  {p.status || "pending"}
+                </span>
               </p>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 mt-auto pt-2">
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-2 sm:flex-row mt-auto pt-2">
               <button
                 disabled={p.status === "confirmed"}
                 onClick={() => openConfirmModal(p)}
-                className="bg-green-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="bg-green-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 hover:bg-green-700 transition"
               >
                 Accept
               </button>
               <button
                 disabled={p.status === "rejected"}
                 onClick={() => handleReject(p._id)}
-                className="bg-red-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="bg-red-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 hover:bg-red-700 transition"
               >
                 Reject
               </button>
@@ -4729,7 +3598,7 @@ const PharmacyAdmin = () => {
         ))}
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Confirm Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded shadow-lg max-w-xs w-full">
@@ -4752,6 +3621,7 @@ const PharmacyAdmin = () => {
                 Not all present, specify:
               </label>
             </div>
+
             {!allPresent && (
               <div className="flex flex-col space-y-2 mt-2">
                 {manualMedicines.map((val, idx) => (
@@ -4778,6 +3648,7 @@ const PharmacyAdmin = () => {
                 </button>
               </div>
             )}
+
             <div className="flex space-x-3 mt-4">
               <button
                 onClick={handleConfirmMedicines}
@@ -4860,7 +3731,7 @@ const Profile = () => {
     setError("");
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/profile/${encodeURIComponent(userEmail)}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/profile/${encodeURIComponent(userEmail)}`
       );
       const data = res.data || {};
 
@@ -4908,7 +3779,7 @@ const Profile = () => {
     setError("");
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/profile/${encodeURIComponent(userEmail)}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/profile/${encodeURIComponent(userEmail)}`,
         userData
       );
       setUserData(res.data);
@@ -5090,7 +3961,7 @@ const Raksha = () => {
   // Check backend status
   const checkServerStatus = async () => {
     try {
-      await axios.get("http://localhost:5000/");
+      await axios.get(`${import.meta.env.VITE_BACKEND_URL}`);
       setServerStatus("online");
       setError("");
     } catch {
@@ -5103,7 +3974,7 @@ const Raksha = () => {
   const fetchRequests = async () => {
     if (serverStatus !== "online") return;
     try {
-      const res = await axios.get("http://localhost:5000/api/requests");
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/requests`);
       const filtered = res.data.filter(req => req.status === "open" || req.status === "accepted");
       setRequests(filtered);
       setError("");
@@ -5136,7 +4007,7 @@ const Raksha = () => {
     if (!formData.group || !formData.units || !formData.locationName) return alert("Fill all fields!");
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/requests/request", {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/requests/request`, {
         ...formData,
         units: Number(formData.units),
         requesterEmail: user.email,
@@ -5161,7 +4032,7 @@ const Raksha = () => {
     setLoading(true);
     try {
       const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-      await axios.put(`http://localhost:5000/api/requests/${requestId}/accept`, {
+      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/requests/${requestId}/accept`, {
         donorEmail: user.email,
         donorCode: randomCode,
         donorName: user.name,
@@ -5181,7 +4052,7 @@ const Raksha = () => {
   // 🩸 Requester confirms donation
   const handleConfirmDonation = async (requestId) => {
     try {
-      const res = await axios.post(`http://localhost:5000/api/requests/confirmDonation/${requestId}`);
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/requests/confirmDonation/${requestId}`);
       setDonorCode(res.data.donorCode);
       setThankYou(true);
       setShowConfetti(true);
@@ -5547,6 +4418,1355 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
 });
+</file>
+
+<file path="backend/.env">
+# Backend server port
+PORT=5000
+
+# MongoDB connection string (replace <user> and <pass> with your Atlas credentials)
+MONGO_URI=mongodb://localhost:27017/swasthya
+
+# JWT secret for authentication
+JWT_SECRET=supersecretkey123!@#456
+
+# Frontend URL (used for CORS)
+FRONTEND_URL=http://localhost:5173
+</file>
+
+<file path="backend/config/db.js">
+// backend/db.js
+const mongoose = require("mongoose");
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect("mongodb://127.0.0.1:27017/swasthya_hub" || `${process.env.MONGO_URI}/swasthya_hub`, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("MongoDB connected");
+  } catch (err) {
+    console.error("MongoDB connection failed:", err.message);
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+</file>
+
+<file path="backend/index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swasthya Hub</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="backend/middleware/adminAuth.js">
+const jwt = require("jsonwebtoken");
+
+module.exports = (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ message: "No token" });
+
+  const token = auth.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== "admin")
+      return res.status(403).json({ message: "Access denied" });
+    req.admin = decoded;
+    next();
+  } catch (e) {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+</file>
+
+<file path="backend/middleware/auth.js">
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const Pharmacist = require('../models/pharmacist');
+
+module.exports = async (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: 'No token' });
+
+  const token = auth.split(' ')[1];
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Example: check if payload type is pharmacist or user (customize as needed)
+    if (payload.userId) {
+      // For pharmacist use userId
+      const pharmacist = await Pharmacist.findOne({ userId: payload.userId });
+      if (!pharmacist) return res.status(401).json({ error: 'Invalid token' });
+      req.pharmacist = pharmacist;
+    } else if (payload.id) {
+      // For existing users with id
+      const user = await User.findById(payload.id);
+      if (!user) return res.status(401).json({ error: 'Invalid token' });
+      req.user = user;
+    } else {
+      return res.status(401).json({ error: 'Invalid token payload' });
+    }
+
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Auth failed' });
+  }
+};
+</file>
+
+<file path="backend/migrateAddAchievements.js">
+// migrateAddAchievements.js
+const mongoose = require("mongoose");
+const User = require("./models/User");
+
+// 🔁 Replace with your MongoDB connection string
+const MONGO_URI = `${process.env.MONGO_URI}swasthya`;
+
+const migrateAchievements = async () => {
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log("✅ Connected to MongoDB");
+
+    // Find users without achievements field
+    const users = await User.find({ achievements: { $exists: false } });
+
+    if (users.length === 0) {
+      console.log("🎉 All users already have the 'achievements' field!");
+      return process.exit(0);
+    }
+
+    // Add empty achievements array for all users missing it
+    const updateResult = await User.updateMany(
+      { achievements: { $exists: false } },
+      { $set: { achievements: [] } }
+    );
+
+    console.log(
+      `✅ Migration complete! Updated ${updateResult.modifiedCount} users.`
+    );
+
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Migration failed:", err);
+    process.exit(1);
+  }
+};
+
+migrateAchievements();
+</file>
+
+<file path="backend/models/Admin.js">
+// backend/models/Admin.js
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const adminSchema = new mongoose.Schema({
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+});
+
+adminSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+adminSchema.methods.comparePassword = function (candidate) {
+  return bcrypt.compare(candidate, this.password);
+};
+
+module.exports = mongoose.model("Admin", adminSchema);
+</file>
+
+<file path="backend/models/BloodRequest.js">
+// backend/models/BloodRequest.js
+const mongoose = require("mongoose");
+
+const BloodRequestSchema = new mongoose.Schema(
+  {
+    group: {
+      type: String,
+      required: true,
+    },
+    units: {
+      type: Number,
+      required: true,
+    },
+    location: {
+      name: { type: String, required: true },
+      lat: { type: Number, required: false },
+      lng: { type: Number, required: false },
+    },
+    requester: {
+      type: String,
+      required: true,
+    },
+    donor: {
+      type: String,
+      default: null,
+    },
+    donorName: {
+      type: String,
+      default: null,
+    },
+    donorPhone: {
+      type: String,
+      default: null,
+    },
+    donorCode: {
+      type: String,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ["open", "accepted", "completed"],
+      default: "open",
+    },
+    meetingTime: {
+      type: String,
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
+
+// TTL index: automatically delete document 24 hours after creation
+BloodRequestSchema.index({ createdAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 });
+
+module.exports = mongoose.model("BloodRequest", BloodRequestSchema);
+</file>
+
+<file path="backend/models/Donation.js">
+// backend/models/Donation.js
+const mongoose = require('mongoose');
+
+const donationSchema = new mongoose.Schema({
+  request: { type: mongoose.Schema.Types.ObjectId, ref: 'BloodRequest', required: true },
+  donor: { type: String, required: true }, // Changed to String (email)
+  receiver: { type: String, required: true }, // Changed to String (email)
+  status: { type: String, enum: ['pending','completed'], default: 'pending' },
+  confirmationCode: { type: String },
+}, { timestamps: true });
+
+module.exports = mongoose.model('Donation', donationSchema);
+</file>
+
+<file path="backend/models/pharmacist.js">
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const pharmacistSchema = new mongoose.Schema({
+  userId: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+});
+
+pharmacistSchema.pre("save", async function(next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+pharmacistSchema.methods.comparePassword = function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model("Pharmacist", pharmacistSchema);
+</file>
+
+<file path="backend/models/prescription.js">
+const mongoose = require("mongoose");
+
+const prescriptionSchema = new mongoose.Schema({
+  userName: { type: String, required: true },
+  userEmail: { type: String, required: true },
+
+  // 🧾 For uploaded prescriptions
+  filename: { type: String, default: null },
+  originalname: { type: String, default: null },
+
+  // 💊 For manual selections
+  medicines: {
+    type: [String], // array of medicine names
+    default: [],    // empty array if it's an uploaded file
+  },
+
+  // 🔖 Common fields
+  type: {
+    type: String,
+    enum: ["upload", "manual"],
+    default: "upload",
+  },
+  status: {
+    type: String,
+    enum: ["pending", "confirmed", "rejected"],
+    default: "pending",
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+
+  // 🧠 Pharmacist confirmation info
+  confirmation: {
+    allPresent: { type: Boolean, default: false },
+    medicines: { type: [String], default: [] }, // confirmed/available medicines
+  },
+});
+
+module.exports = mongoose.model("Prescription", prescriptionSchema);
+</file>
+
+<file path="backend/models/User.js">
+// backend/models/User.js
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, unique: true, sparse: true },
+    phone: { type: String, unique: true, sparse: true },
+    password: { type: String, required: true },
+    age: { type: Number },
+    gender: { type: String },
+    bloodGroup: { type: String },
+    height: { type: String },
+    weight: { type: String },
+    allergies: { type: String },
+    medicalConditions: { type: String },
+    medications: { type: String },
+    fathername: { type: String },
+    mothername: { type: String },
+    emergencyContact: {
+      name: { type: String },
+      phone: { type: String },
+      relation: { type: String },
+    },
+
+    // ✅ New field: Blood Donation Achievements
+    achievements: [
+      {
+        title: { type: String, default: "Blood Donation" },
+        date: { type: Date, default: Date.now },
+        donorCode: { type: String },
+        location: { type: String },
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("User", userSchema);
+</file>
+
+<file path="backend/models/UserProfile.js">
+// backend/models/UserProfile.js
+const mongoose = require("mongoose");
+
+const userProfileSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  name: String,
+  age: Number,
+  gender: String,
+  bloodGroup: String,
+  height: String,
+  weight: String,
+  allergies: String,
+  medicalConditions: String,
+  medications: String,
+  fathername: String,
+  mothername: String,
+  emergencyContact: {
+    name: String,
+    phone: String,
+    relation: String,
+  },
+
+  // ✅ NEW: Track user's donation achievements
+  achievements: [
+    {
+      title: { type: String, default: "Blood Donation" },
+      date: { type: Date, default: Date.now },
+      donorCode: { type: String },
+      location: { type: String },
+    },
+  ],
+});
+
+module.exports = mongoose.model("UserProfile", userProfileSchema);
+</file>
+
+<file path="backend/package.json">
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node scripts/createPharmacists.js && nodemon server.js",
+    "create-pharmacists": "node scripts/createPharmacists.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "gridfs-stream": "^1.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "mime": "^4.1.0",
+    "mime-types": "^3.0.1",
+    "mongoose": "^8.18.2",
+    "multer": "^2.0.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
+</file>
+
+<file path="backend/README.md">
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+</file>
+
+<file path="backend/routes/adminAuth.js">
+// backend/routes/adminAuth.js
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const Admin = require("../models/Admin");
+const router = express.Router();
+
+// Register admin (run once manually or via script)
+router.post("/register", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const existing = await Admin.findOne({ email });
+    if (existing) return res.status(400).json({ message: "Admin exists" });
+    const admin = new Admin({ email, password });
+    await admin.save();
+    res.status(201).json({ message: "Admin created" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Login admin
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email });
+    if (!admin) return res.status(400).json({ message: "Invalid credentials" });
+    const isMatch = await admin.comparePassword(password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign({ id: admin._id, role: "admin" }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/adminPanel.js">
+const express = require("express");
+const User = require("../models/User");
+const BloodRequest = require("../models/BloodRequest");
+const Donation = require("../models/Donation");
+const Pharmacist = require("../models/pharmacist");
+const adminAuth = require("../middleware/adminAuth");
+
+const router = express.Router();
+
+// Get all users
+router.get("/users", adminAuth, async (req, res) => {
+  const users = await User.find().select("-password");
+  res.json(users);
+});
+
+// Get all blood requests
+router.get("/requests", adminAuth, async (req, res) => {
+  const requests = await BloodRequest.find();
+  res.json(requests);
+});
+
+// Get all donations
+router.get("/donations", adminAuth, async (req, res) => {
+  const donations = await Donation.find().populate("request");
+  res.json(donations);
+});
+
+// Get all pharmacists
+router.get("/pharmacists", adminAuth, async (req, res) => {
+  const pharmacists = await Pharmacist.find().select("-password");
+  res.json(pharmacists);
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/auth.js">
+// backend/routes/auth.js
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User.js");
+
+const router = express.Router();
+
+// =========================
+// REGISTER ROUTE
+// =========================
+router.post("/register", async (req, res) => {
+  try {
+    const { name, email, phone, password, bloodGroup, age } = req.body;
+
+    // Trim values
+    if (name) req.body.name = name.trim();
+    if (email) req.body.email = email.trim();
+    if (phone) req.body.phone = phone.trim();
+    if (bloodGroup) req.body.bloodGroup = bloodGroup.trim();
+
+    // Validation
+    if (!name || !password || !bloodGroup || !age || (!email && !phone)) {
+      return res
+        .status(400)
+        .json({ error: "Name, password, blood group, age and either email or phone are required" });
+    }
+
+    // Check if user exists (by email OR phone)
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists with this email or phone" });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email: email || null,
+      phone: phone || null,
+      password: hashedPassword,
+      bloodGroup,
+      age,
+    });
+
+    await user.save();
+
+    return res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    console.error("Register error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// =========================
+// LOGIN ROUTE
+// =========================
+router.post("/login", async (req, res) => {
+  try {
+    const { email, phone, password } = req.body;
+
+    // Trim values
+    if (email) req.body.email = email.trim();
+    if (phone) req.body.phone = phone.trim();
+
+    // Validation
+    if ((!email && !phone) || !password) {
+      return res.status(400).json({ error: "Provide email or phone and password" });
+    }
+
+    // Check user existence (by email OR phone)
+    const user = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (!user) return res.status(400).json({ error: "Invalid credentials" });
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+
+    // Sign JWT
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    // Send only safe user info
+    const { password: _, ...userData } = user._doc;
+
+    return res.json({ token, user: userData });
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/bloodRoutes.js">
+// backend/routes/bloodRoutes.js
+const express = require("express");
+const BloodRequest = require("../models/BloodRequest.js");
+const Donation = require("../models/Donation.js");
+const UserProfile = require("../models/UserProfile.js");
+
+const router = express.Router();
+
+// --------------------- GET all blood requests ---------------------
+router.get("/", async (req, res) => {
+  try {
+    const requests = await BloodRequest.find();
+    res.status(200).json(requests);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    res.status(500).json({ message: "Server error while fetching requests" });
+  }
+});
+
+// --------------------- POST create a new blood request ---------------------
+router.post("/request", async (req, res) => {
+  try {
+    const { group, units, locationName, lat, lng, requesterEmail } = req.body;
+
+    if (!group || !units || !locationName || !requesterEmail) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newRequest = new BloodRequest({
+      group,
+      units,
+      location: {
+        name: locationName,
+        lat: lat || null,
+        lng: lng || null,
+      },
+      requester: requesterEmail,
+    });
+
+    const savedRequest = await newRequest.save();
+    res.status(201).json(savedRequest);
+  } catch (err) {
+    console.error("Create request error:", err);
+    res.status(500).json({ message: "Server error while creating request" });
+  }
+});
+
+// --------------------- PUT accept a blood request ---------------------
+router.put("/:requestId/accept", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { donorEmail, donorCode, donorName, donorPhone } = req.body;
+
+    if (!donorEmail || !donorCode) {
+      return res.status(400).json({ message: "Donor email and code are required" });
+    }
+
+    const request = await BloodRequest.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    if (request.status !== "open") {
+      return res.status(400).json({ message: "Request already accepted or completed" });
+    }
+
+    // Update blood request info
+    request.status = "accepted";
+    request.donor = donorEmail;
+    request.donorName = donorName;
+    request.donorPhone = donorPhone;
+    request.donorCode = donorCode;
+    const updatedRequest = await request.save();
+
+    // Create a donation record
+    const donation = new Donation({
+      request: requestId,
+      donor: donorEmail,
+      receiver: request.requester,
+      status: "pending",
+      confirmationCode: donorCode,
+    });
+    await donation.save();
+
+    res.json({
+      message: "Request accepted successfully",
+      updatedRequest,
+      donation,
+    });
+  } catch (err) {
+    console.error("Accept error:", err);
+    res.status(500).json({ message: "Server error while accepting request" });
+  }
+});
+
+// --------------------- ✅ POST confirm donation (by requester) ---------------------
+router.post("/confirmDonation/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const request = await BloodRequest.findById(requestId);
+
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    // Prevent re-confirmation
+    if (request.status === "completed") {
+      return res.status(400).json({ message: "Donation already confirmed" });
+    }
+    if (request.status !== "accepted") {
+      return res.status(400).json({ message: "Request not yet accepted" });
+    }
+
+    // Generate donor code if missing
+    const donorCode =
+      request.donorCode ||
+      "DONOR-" + Math.random().toString(36).substr(2, 8).toUpperCase();
+
+    // Update request status
+    request.status = "completed";
+    request.donationConfirmed = true;
+    request.donorCode = donorCode;
+    await request.save();
+
+    // Update matching donation record
+    const donation = await Donation.findOne({ request: requestId });
+    if (donation) {
+      donation.status = "completed";
+      donation.completedAt = new Date();
+      await donation.save();
+    }
+
+    // ✅ Update donor's UserProfile with achievement
+    let donorProfile = await UserProfile.findOne({ email: request.donor });
+    if (!donorProfile) {
+      donorProfile = new UserProfile({
+        email: request.donor,
+        achievements: [],
+      });
+    }
+
+    const achievement = {
+      title: "Blood Donation",
+      date: new Date(),
+      donorCode,
+      location: request.location?.name || "Unknown Location",
+    };
+
+    donorProfile.achievements.push(achievement);
+    await donorProfile.save();
+
+    return res.status(200).json({
+      message: "Donation confirmed and achievement added successfully!",
+      donorCode,
+      achievement,
+    });
+  } catch (err) {
+    console.error("Donation confirmation error:", err);
+    res.status(500).json({ message: "Server error while confirming donation" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/pharmacistAuth.js">
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const Pharmacist = require("../models/pharmacist");
+
+const router = express.Router();
+
+// backend/routes/pharmacistAuth.js
+router.post("/login", async (req, res) => {
+  const { userId, password } = req.body;
+  const pharmacist = await Pharmacist.findOne({ userId });
+  if (!pharmacist)
+    return res.status(401).json({ message: "Invalid credentials" });
+
+  const isMatch = await pharmacist.comparePassword(password);
+  if (!isMatch)
+    return res.status(401).json({ message: "Invalid credentials" });
+
+  const token = jwt.sign({ userId: pharmacist.userId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+  res.json({ token, userId: pharmacist.userId });
+});
+
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/pharmacistDashboard.js">
+const express = require('express');
+const router = express.Router();
+const Prescription = require('../models/prescription');
+const authMiddleware = require('../middleware/auth');
+
+// Get logged-in pharmacist info
+router.get('/me', authMiddleware, (req, res) => {
+  res.json({ userId: req.pharmacist.userId }); // Adjust pharmacist user object accordingly
+});
+
+// Get prescriptions assigned to logged-in pharmacist
+router.get('/prescriptions', authMiddleware, async (req, res) => {
+  try {
+    const prescriptions = await Prescription.find({ pharmacistUserId: req.pharmacist.userId });
+    res.json(prescriptions);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Accept a prescription
+router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
+
+    prescription.status = 'accepted';
+    await prescription.save();
+    res.json({ message: 'Prescription accepted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Reject a prescription
+router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
+
+    prescription.status = 'rejected';
+    await prescription.save();
+    res.json({ message: 'Prescription rejected' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/prescriptions.js">
+const express = require("express");
+const multer = require("multer");
+const Prescription = require("../models/prescription");
+const auth = require("../middleware/auth");
+const mongoose = require("mongoose");
+
+const upload = multer({ storage: multer.memoryStorage() });
+const router = express.Router();
+
+let bucket;
+
+// Initialize GridFS for image uploads
+mongoose.connection.once("open", () => {
+  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: "prescriptions",
+  });
+});
+
+/* =============================
+   📤 Upload Prescription (Image)
+   ============================= */
+router.post("/", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file)
+      return res.status(400).json({ message: "No file uploaded" });
+
+    const { originalname, buffer, mimetype } = req.file;
+    const { userName, userEmail } = req.body;
+
+    if (!userName || !userEmail) {
+      return res
+        .status(400)
+        .json({ message: "User name and email required" });
+    }
+
+    const uploadStream = bucket.openUploadStream(originalname, {
+      contentType: mimetype,
+    });
+
+    uploadStream.end(buffer);
+
+    uploadStream.on("finish", async () => {
+      const newPrescription = new Prescription({
+        originalname,
+        filename: originalname,
+        userName,
+        userEmail,
+        date: new Date(),
+        status: "pending",
+        type: "upload", // mark as uploaded
+      });
+      await newPrescription.save();
+      res.json({
+        message:
+          "Prescription uploaded and stored in MongoDB GridFS successfully!",
+      });
+    });
+
+    uploadStream.on("error", (err) => {
+      console.error(err);
+      res.status(500).json({ message: "Failed to upload." });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to upload." });
+  }
+});
+
+/* =============================
+   🧾 Get all prescriptions (protected)
+   ============================= */
+router.get("/", auth, async (req, res) => {
+  try {
+    const prescriptions = await Prescription.find();
+    res.json(prescriptions);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch prescriptions." });
+  }
+});
+
+/* =============================
+   🖼️ Serve Prescription Image
+   ============================= */
+router.get("/image/:filename", async (req, res) => {
+  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
+
+  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+
+  downloadStream.on("error", () => res.status(404).send("File not found"));
+
+  res.set("Content-Type", "image/jpeg");
+  downloadStream.pipe(res);
+});
+
+/* =============================
+   ✅ Confirm Prescription (Pharmacist)
+   ============================= */
+router.put("/:id/confirm", auth, async (req, res) => {
+  const { allPresent, medicines } = req.body;
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) {
+      return res.status(404).json({ message: "Prescription not found." });
+    }
+
+    prescription.status = "confirmed";
+    prescription.confirmation = { allPresent, medicines };
+    await prescription.save();
+
+    // Emit real-time notification if socket.io is active
+    const io = req.app.get("io");
+    if (io) {
+      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
+        prescriptionId: prescription._id,
+        allPresent,
+        medicines,
+        message: allPresent
+          ? "All medicines available"
+          : `Available medicines: ${medicines.join(", ")}`,
+      });
+    }
+
+    res.json({
+      message: "Prescription confirmed!",
+      confirmed: prescription.confirmation,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Prescription confirmation failed." });
+  }
+});
+
+/* =============================
+   💊 Manual Medicine Request (NEW)
+   ============================= */
+router.post("/manual", auth, async (req, res) => {
+  try {
+    const { medicines, userEmail, userName } = req.body;
+
+    if (!medicines || medicines.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Please provide at least one medicine." });
+    }
+
+    // Create manual prescription entry
+    const manualPrescription = new Prescription({
+      userEmail: userEmail || req.user.email,
+      userName: userName || req.user.name,
+      medicines,
+      type: "manual",
+      date: new Date(),
+      status: "pending",
+    });
+
+    await manualPrescription.save();
+    res.status(201).json({
+      message: "Manual medicine request submitted successfully!",
+    });
+  } catch (err) {
+    console.error("Manual prescription error:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to submit manual medicine request." });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/profile.js">
+// backend/routes/profile.js
+const express = require("express");
+const UserProfile = require("../models/UserProfile.js");
+
+const router = express.Router();
+
+/**
+ * GET /api/profile/:email
+ * Fetch user profile by email
+ */
+router.get("/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    if (!email) return res.status(400).json({ msg: "Email is required" });
+
+    const profile = await UserProfile.findOne({ email });
+
+    if (!profile) {
+      // Return default empty profile structure if not found
+      return res.json({
+        email,
+        name: "",
+        age: "",
+        gender: "",
+        bloodGroup: "",
+        height: "",
+        weight: "",
+        allergies: "",
+        medicalConditions: "",
+        medications: "",
+        fathername: "",
+        mothername: "",
+        emergencyContact: {
+          name: "",
+          phone: "",
+          relation: "",
+        },
+        achievements: [], // ✅ fixed (no undefined variable)
+      });
+    }
+
+    // ✅ Ensure achievements always exist
+    if (!profile.achievements) profile.achievements = [];
+
+    res.status(200).json(profile);
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+/**
+ * POST /api/profile/:email
+ * Update or create profile by email
+ */
+router.post("/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    if (!email) return res.status(400).json({ msg: "Email is required" });
+
+    const profileData = req.body;
+    profileData.email = email;
+
+    const updatedProfile = await UserProfile.findOneAndUpdate(
+      { email },
+      { $set: profileData },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+      }
+    );
+
+    res.status(200).json(updatedProfile);
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+/**
+ * POST /api/profile
+ * Alternative endpoint using email in body
+ */
+router.post("/", async (req, res) => {
+  try {
+    const { email, ...profileData } = req.body;
+    if (!email) return res.status(400).json({ msg: "Email is required" });
+
+    const updatedProfile = await UserProfile.findOneAndUpdate(
+      { email },
+      { $set: { ...profileData, email } },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+      }
+    );
+
+    res.status(200).json(updatedProfile);
+  } catch (err) {
+    console.error("Profile save error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/users.js">
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: { type: String, unique: true },
+  password: String,
+  location: {
+    lat: Number,
+    lng: Number,
+  },
+});
+
+export default mongoose.model("User", userSchema);
+</file>
+
+<file path="backend/scripts/createadmin.js">
+const mongoose = require("mongoose");
+const Admin = require("../models/Admin");
+
+mongoose.connect(`${process.env.MONGO_URI}/swasthya`)
+  .then(async () => {
+    const admin = new Admin({
+      email: "admin1@gmail.com",
+      password: "Admin@1234"
+    });
+    await admin.save();
+    console.log("✅ Admin created successfully!");
+    mongoose.disconnect();
+  })
+  .catch(err => console.error("❌ Error:", err));
+</file>
+
+<file path="backend/scripts/createPharmacists.js">
+const mongoose = require('mongoose');
+const Pharmacist = require('../models/pharmacist'); // adjust path as needed
+
+mongoose.connect(`${process.env.MONGO_URI}/swasthya`);
+
+const pharmacists = [
+  { userId: "Amrit", password: "Amrit@123" },
+  { userId: "Nishant", password: "Nishant@123" },
+  { userId: "Dipu", password: "Dalla@123" }
+];
+
+(async () => {
+  for (const user of pharmacists) {
+    const exists = await Pharmacist.findOne({ userId: user.userId });
+    if (!exists) {
+      const pharmacist = new Pharmacist(user);
+      await pharmacist.save();
+      console.log(`Created pharmacist ${user.userId}`);
+    } else {
+      console.log(`UserId ${user.userId} already exists, skipping.`);
+    }
+  }
+  console.log("All pharmacist creation attempts complete!");
+  mongoose.disconnect();
+})();
+</file>
+
+<file path="backend/server.js">
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
+const mime = require("mime-types");
+const Grid = require("gridfs-stream");
+const http = require("http");
+const { Server } = require("socket.io");
+
+// Importing routes
+const authRoutes = require("./routes/auth.js");
+const bloodRequestRoutes = require("./routes/bloodRoutes.js");
+const profileRoutes = require("./routes/profile.js");
+const prescriptionRoutes = require("./routes/prescriptions");
+const pharmacistAuthRoutes = require("./routes/pharmacistAuth.js");
+const pharmacistDashboardRoutes = require("./routes/pharmacistDashboard");
+
+// ✅ Newly added admin routes
+const adminAuthRoutes = require("./routes/adminAuth.js");
+const adminPanelRoutes = require("./routes/adminPanel.js");
+
+dotenv.config();
+
+const app = express();
+const server = http.createServer(app);
+
+// Setup socket.io with proper CORS
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("✅ User connected:", socket.id);
+  socket.on("identify", ({ userId }) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their personal room`);
+  });
+});
+
+// Middleware
+app.use(express.json());
+
+// Global CORS config
+app.use(
+  cors({
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
+    credentials: true,
+  })
+);
+
+// MongoDB connection and GridFS initialization
+let gfs;
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/swasthya";
+
+mongoose
+  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    const conn = mongoose.connection;
+    gfs = Grid(conn.db, mongoose.mongo);
+    gfs.collection("prescriptions");
+    console.log("✅ MongoDB connected and GridFS initialized");
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+// ==========================
+// 🔗 ROUTE MIDDLEWARES
+// ==========================
+app.use("/api/auth", authRoutes); // user auth
+app.use("/api/requests", bloodRequestRoutes); // blood requests
+app.use("/api/profile", profileRoutes); // user profiles
+app.use("/api/prescriptions", prescriptionRoutes); // prescriptions upload/view
+app.use("/api/pharmacist", pharmacistDashboardRoutes); // pharmacist dashboard
+app.use("/api/pharmacist-auth", pharmacistAuthRoutes); // pharmacist login
+
+// ✅ Admin routes
+app.use("/api/admin", adminAuthRoutes); // /api/admin/login & /api/admin/register
+app.use("/api/admin-panel", adminPanelRoutes); // protected admin operations
+
+// ==========================
+// 🗂️ STATIC + FILE STREAMING
+// ==========================
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Stream prescription images from GridFS
+app.get("/api/prescriptions/image/:filename", (req, res) => {
+  if (!gfs) {
+    return res.status(500).send("GridFS not initialized");
+  }
+
+  const filename = req.params.filename;
+
+  gfs.files.findOne({ filename }, (err, file) => {
+    if (err) {
+      console.error("Error finding file:", err);
+      return res.status(500).send("Server error");
+    }
+
+    if (!file || file.length === 0) {
+      return res.status(404).send("File not found");
+    }
+
+    const contentType =
+      file.contentType || mime.lookup(file.filename) || "application/octet-stream";
+    res.set("Content-Type", contentType);
+
+    const readstream = gfs.createReadStream(file.filename);
+
+    readstream.on("error", (err) => {
+      console.error("Readstream error:", err);
+      res.status(500).end("Error while streaming file");
+    });
+
+    readstream.pipe(res);
+  });
+});
+
+// ==========================
+// 🩺 HEALTH CHECK
+// ==========================
+app.get("/", (req, res) => {
+  res.send("✅ Swasthya Hub Backend is running successfully!");
+});
+
+// ==========================
+// ⚠️ GLOBAL ERROR HANDLER
+// ==========================
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err.stack);
+  res.status(500).json({ message: err.message || "Internal Server Error" });
+});
+
+// ==========================
+// 🚀 SERVER START
+// ==========================
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 </file>
 
 <file path="package.json">

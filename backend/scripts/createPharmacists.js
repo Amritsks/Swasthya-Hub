@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Pharmacist = require('../models/pharmacist'); // adjust path as needed
 
-mongoose.connect('mongodb://localhost:27017/swasthya');
+mongoose.connect(`${process.env.MONGO_URI}/swasthya`);
 
 const pharmacists = [
   { userId: "Amrit", password: "Amrit@123" },
