@@ -40,7 +40,8 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-backend/.env
+.gitignore
+backend/.gitignore
 backend/config/db.js
 backend/index.html
 backend/middleware/adminAuth.js
@@ -67,32 +68,6 @@ backend/routes/users.js
 backend/scripts/createadmin.js
 backend/scripts/createPharmacists.js
 backend/server.js
-frontend/.env
-frontend/.git/COMMIT_EDITMSG
-frontend/.git/config
-frontend/.git/description
-frontend/.git/FETCH_HEAD
-frontend/.git/HEAD
-frontend/.git/hooks/applypatch-msg.sample
-frontend/.git/hooks/commit-msg.sample
-frontend/.git/hooks/fsmonitor-watchman.sample
-frontend/.git/hooks/post-update.sample
-frontend/.git/hooks/pre-applypatch.sample
-frontend/.git/hooks/pre-commit.sample
-frontend/.git/hooks/pre-merge-commit.sample
-frontend/.git/hooks/pre-push.sample
-frontend/.git/hooks/pre-rebase.sample
-frontend/.git/hooks/pre-receive.sample
-frontend/.git/hooks/prepare-commit-msg.sample
-frontend/.git/hooks/push-to-checkout.sample
-frontend/.git/hooks/sendemail-validate.sample
-frontend/.git/hooks/update.sample
-frontend/.git/info/exclude
-frontend/.git/logs/HEAD
-frontend/.git/logs/refs/heads/main
-frontend/.git/logs/refs/remotes/origin/main
-frontend/.git/refs/heads/main
-frontend/.git/refs/remotes/origin/main
 frontend/.gitignore
 frontend/eslint.config.js
 frontend/index.html
@@ -133,1009 +108,1304 @@ package.json
 <files>
 This section contains the contents of the repository's files.
 
-<file path="frontend/.env">
-VITE_BACKEND_URL=http://localhost:5000
+<file path=".gitignore">
+# ENV FILES
+.env
+frontend/.env
+backend/.env
+
+# NODE
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# BUILDS
+frontend/dist
+backend/dist
+
+# LOGS
+npm-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
 </file>
 
-<file path="frontend/.git/COMMIT_EDITMSG">
-Initial commit
-</file>
+<file path="backend/.gitignore">
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
 
-<file path="frontend/.git/config">
-[core]
-	repositoryformatversion = 0
-	filemode = false
-	bare = false
-	logallrefupdates = true
-	symlinks = false
-	ignorecase = true
-[remote "origin"]
-	url = https://github.com/Amritsks/Swasthya-Hub
-	fetch = +refs/heads/*:refs/remotes/origin/*
-[branch "main"]
-	remote = origin
-	merge = refs/heads/main
-</file>
-
-<file path="frontend/.git/description">
-Unnamed repository; edit this file 'description' to name the repository.
-</file>
-
-<file path="frontend/.git/FETCH_HEAD">
-941fc16fea50ca662ef9262d1eacddf6bf4545cc		branch 'main' of https://github.com/Amritsks/Swasthya-Hub
-</file>
-
-<file path="frontend/.git/HEAD">
-ref: refs/heads/main
-</file>
-
-<file path="frontend/.git/hooks/applypatch-msg.sample">
-#!/bin/sh
-#
-# An example hook script to check the commit log message taken by
-# applypatch from an e-mail message.
-#
-# The hook should exit with non-zero status after issuing an
-# appropriate message if it wants to stop the commit.  The hook is
-# allowed to edit the commit message file.
-#
-# To enable this hook, rename this file to "applypatch-msg".
-
-. git-sh-setup
-commitmsg="$(git rev-parse --git-path hooks/commit-msg)"
-test -x "$commitmsg" && exec "$commitmsg" ${1+"$@"}
-:
-</file>
-
-<file path="frontend/.git/hooks/commit-msg.sample">
-#!/bin/sh
-#
-# An example hook script to check the commit log message.
-# Called by "git commit" with one argument, the name of the file
-# that has the commit message.  The hook should exit with non-zero
-# status after issuing an appropriate message if it wants to stop the
-# commit.  The hook is allowed to edit the commit message file.
-#
-# To enable this hook, rename this file to "commit-msg".
-
-# Uncomment the below to add a Signed-off-by line to the message.
-# Doing this in a hook is a bad idea in general, but the prepare-commit-msg
-# hook is more suited to it.
-#
-# SOB=$(git var GIT_AUTHOR_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
-# grep -qs "^$SOB" "$1" || echo "$SOB" >> "$1"
-
-# This example catches duplicate Signed-off-by lines.
-
-test "" = "$(grep '^Signed-off-by: ' "$1" |
-	 sort | uniq -c | sed -e '/^[ 	]*1[ 	]/d')" || {
-	echo >&2 Duplicate Signed-off-by lines.
-	exit 1
-}
-</file>
-
-<file path="frontend/.git/hooks/fsmonitor-watchman.sample">
-#!/usr/bin/perl
-
-use strict;
-use warnings;
-use IPC::Open2;
-
-# An example hook script to integrate Watchman
-# (https://facebook.github.io/watchman/) with git to speed up detecting
-# new and modified files.
-#
-# The hook is passed a version (currently 2) and last update token
-# formatted as a string and outputs to stdout a new update token and
-# all files that have been modified since the update token. Paths must
-# be relative to the root of the working tree and separated by a single NUL.
-#
-# To enable this hook, rename this file to "query-watchman" and set
-# 'git config core.fsmonitor .git/hooks/query-watchman'
-#
-my ($version, $last_update_token) = @ARGV;
-
-# Uncomment for debugging
-# print STDERR "$0 $version $last_update_token\n";
-
-# Check the hook interface version
-if ($version ne 2) {
-	die "Unsupported query-fsmonitor hook version '$version'.\n" .
-	    "Falling back to scanning...\n";
-}
-
-my $git_work_tree = get_working_dir();
-
-my $retry = 1;
-
-my $json_pkg;
-eval {
-	require JSON::XS;
-	$json_pkg = "JSON::XS";
-	1;
-} or do {
-	require JSON::PP;
-	$json_pkg = "JSON::PP";
-};
-
-launch_watchman();
-
-sub launch_watchman {
-	my $o = watchman_query();
-	if (is_work_tree_watched($o)) {
-		output_result($o->{clock}, @{$o->{files}});
-	}
-}
-
-sub output_result {
-	my ($clockid, @files) = @_;
-
-	# Uncomment for debugging watchman output
-	# open (my $fh, ">", ".git/watchman-output.out");
-	# binmode $fh, ":utf8";
-	# print $fh "$clockid\n@files\n";
-	# close $fh;
-
-	binmode STDOUT, ":utf8";
-	print $clockid;
-	print "\0";
-	local $, = "\0";
-	print @files;
-}
-
-sub watchman_clock {
-	my $response = qx/watchman clock "$git_work_tree"/;
-	die "Failed to get clock id on '$git_work_tree'.\n" .
-		"Falling back to scanning...\n" if $? != 0;
-
-	return $json_pkg->new->utf8->decode($response);
-}
-
-sub watchman_query {
-	my $pid = open2(\*CHLD_OUT, \*CHLD_IN, 'watchman -j --no-pretty')
-	or die "open2() failed: $!\n" .
-	"Falling back to scanning...\n";
-
-	# In the query expression below we're asking for names of files that
-	# changed since $last_update_token but not from the .git folder.
-	#
-	# To accomplish this, we're using the "since" generator to use the
-	# recency index to select candidate nodes and "fields" to limit the
-	# output to file names only. Then we're using the "expression" term to
-	# further constrain the results.
-	my $last_update_line = "";
-	if (substr($last_update_token, 0, 1) eq "c") {
-		$last_update_token = "\"$last_update_token\"";
-		$last_update_line = qq[\n"since": $last_update_token,];
-	}
-	my $query = <<"	END";
-		["query", "$git_work_tree", {$last_update_line
-			"fields": ["name"],
-			"expression": ["not", ["dirname", ".git"]]
-		}]
-	END
-
-	# Uncomment for debugging the watchman query
-	# open (my $fh, ">", ".git/watchman-query.json");
-	# print $fh $query;
-	# close $fh;
-
-	print CHLD_IN $query;
-	close CHLD_IN;
-	my $response = do {local $/; <CHLD_OUT>};
-
-	# Uncomment for debugging the watch response
-	# open ($fh, ">", ".git/watchman-response.json");
-	# print $fh $response;
-	# close $fh;
-
-	die "Watchman: command returned no output.\n" .
-	"Falling back to scanning...\n" if $response eq "";
-	die "Watchman: command returned invalid output: $response\n" .
-	"Falling back to scanning...\n" unless $response =~ /^\{/;
-
-	return $json_pkg->new->utf8->decode($response);
-}
-
-sub is_work_tree_watched {
-	my ($output) = @_;
-	my $error = $output->{error};
-	if ($retry > 0 and $error and $error =~ m/unable to resolve root .* directory (.*) is not watched/) {
-		$retry--;
-		my $response = qx/watchman watch "$git_work_tree"/;
-		die "Failed to make watchman watch '$git_work_tree'.\n" .
-		    "Falling back to scanning...\n" if $? != 0;
-		$output = $json_pkg->new->utf8->decode($response);
-		$error = $output->{error};
-		die "Watchman: $error.\n" .
-		"Falling back to scanning...\n" if $error;
-
-		# Uncomment for debugging watchman output
-		# open (my $fh, ">", ".git/watchman-output.out");
-		# close $fh;
-
-		# Watchman will always return all files on the first query so
-		# return the fast "everything is dirty" flag to git and do the
-		# Watchman query just to get it over with now so we won't pay
-		# the cost in git to look up each individual file.
-		my $o = watchman_clock();
-		$error = $output->{error};
-
-		die "Watchman: $error.\n" .
-		"Falling back to scanning...\n" if $error;
-
-		output_result($o->{clock}, ("/"));
-		$last_update_token = $o->{clock};
-
-		eval { launch_watchman() };
-		return 0;
-	}
-
-	die "Watchman: $error.\n" .
-	"Falling back to scanning...\n" if $error;
-
-	return 1;
-}
-
-sub get_working_dir {
-	my $working_dir;
-	if ($^O =~ 'msys' || $^O =~ 'cygwin') {
-		$working_dir = Win32::GetCwd();
-		$working_dir =~ tr/\\/\//;
-	} else {
-		require Cwd;
-		$working_dir = Cwd::cwd();
-	}
-
-	return $working_dir;
-}
-</file>
-
-<file path="frontend/.git/hooks/post-update.sample">
-#!/bin/sh
-#
-# An example hook script to prepare a packed repository for use over
-# dumb transports.
-#
-# To enable this hook, rename this file to "post-update".
-
-exec git update-server-info
-</file>
-
-<file path="frontend/.git/hooks/pre-applypatch.sample">
-#!/bin/sh
-#
-# An example hook script to verify what is about to be committed
-# by applypatch from an e-mail message.
-#
-# The hook should exit with non-zero status after issuing an
-# appropriate message if it wants to stop the commit.
-#
-# To enable this hook, rename this file to "pre-applypatch".
-
-. git-sh-setup
-precommit="$(git rev-parse --git-path hooks/pre-commit)"
-test -x "$precommit" && exec "$precommit" ${1+"$@"}
-:
-</file>
-
-<file path="frontend/.git/hooks/pre-commit.sample">
-#!/bin/sh
-#
-# An example hook script to verify what is about to be committed.
-# Called by "git commit" with no arguments.  The hook should
-# exit with non-zero status after issuing an appropriate message if
-# it wants to stop the commit.
-#
-# To enable this hook, rename this file to "pre-commit".
-
-if git rev-parse --verify HEAD >/dev/null 2>&1
-then
-	against=HEAD
-else
-	# Initial commit: diff against an empty tree object
-	against=$(git hash-object -t tree /dev/null)
-fi
-
-# If you want to allow non-ASCII filenames set this variable to true.
-allownonascii=$(git config --type=bool hooks.allownonascii)
-
-# Redirect output to stderr.
-exec 1>&2
-
-# Cross platform projects tend to avoid non-ASCII filenames; prevent
-# them from being added to the repository. We exploit the fact that the
-# printable range starts at the space character and ends with tilde.
-if [ "$allownonascii" != "true" ] &&
-	# Note that the use of brackets around a tr range is ok here, (it's
-	# even required, for portability to Solaris 10's /usr/bin/tr), since
-	# the square bracket bytes happen to fall in the designated range.
-	test $(git diff-index --cached --name-only --diff-filter=A -z $against |
-	  LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
-then
-	cat <<\EOF
-Error: Attempt to add a non-ASCII file name.
-
-This can cause problems if you want to work with people on other platforms.
-
-To be portable it is advisable to rename the file.
-
-If you know what you are doing you can disable this check using:
-
-  git config hooks.allownonascii true
-EOF
-	exit 1
-fi
-
-# If there are whitespace errors, print the offending file names and fail.
-exec git diff-index --check --cached $against --
-</file>
-
-<file path="frontend/.git/hooks/pre-merge-commit.sample">
-#!/bin/sh
-#
-# An example hook script to verify what is about to be committed.
-# Called by "git merge" with no arguments.  The hook should
-# exit with non-zero status after issuing an appropriate message to
-# stderr if it wants to stop the merge commit.
-#
-# To enable this hook, rename this file to "pre-merge-commit".
-
-. git-sh-setup
-test -x "$GIT_DIR/hooks/pre-commit" &&
-        exec "$GIT_DIR/hooks/pre-commit"
-:
-</file>
-
-<file path="frontend/.git/hooks/pre-push.sample">
-#!/bin/sh
-
-# An example hook script to verify what is about to be pushed.  Called by "git
-# push" after it has checked the remote status, but before anything has been
-# pushed.  If this script exits with a non-zero status nothing will be pushed.
-#
-# This hook is called with the following parameters:
-#
-# $1 -- Name of the remote to which the push is being done
-# $2 -- URL to which the push is being done
-#
-# If pushing without using a named remote those arguments will be equal.
-#
-# Information about the commits which are being pushed is supplied as lines to
-# the standard input in the form:
-#
-#   <local ref> <local oid> <remote ref> <remote oid>
-#
-# This sample shows how to prevent push of commits where the log message starts
-# with "WIP" (work in progress).
-
-remote="$1"
-url="$2"
-
-zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
-
-while read local_ref local_oid remote_ref remote_oid
-do
-	if test "$local_oid" = "$zero"
-	then
-		# Handle delete
-		:
-	else
-		if test "$remote_oid" = "$zero"
-		then
-			# New branch, examine all commits
-			range="$local_oid"
-		else
-			# Update to existing branch, examine new commits
-			range="$remote_oid..$local_oid"
-		fi
-
-		# Check for WIP commit
-		commit=$(git rev-list -n 1 --grep '^WIP' "$range")
-		if test -n "$commit"
-		then
-			echo >&2 "Found WIP commit in $local_ref, not pushing"
-			exit 1
-		fi
-	fi
-done
-
-exit 0
-</file>
-
-<file path="frontend/.git/hooks/pre-rebase.sample">
-#!/bin/sh
-#
-# Copyright (c) 2006, 2008 Junio C Hamano
-#
-# The "pre-rebase" hook is run just before "git rebase" starts doing
-# its job, and can prevent the command from running by exiting with
-# non-zero status.
-#
-# The hook is called with the following parameters:
-#
-# $1 -- the upstream the series was forked from.
-# $2 -- the branch being rebased (or empty when rebasing the current branch).
-#
-# This sample shows how to prevent topic branches that are already
-# merged to 'next' branch from getting rebased, because allowing it
-# would result in rebasing already published history.
-
-publish=next
-basebranch="$1"
-if test "$#" = 2
-then
-	topic="refs/heads/$2"
-else
-	topic=`git symbolic-ref HEAD` ||
-	exit 0 ;# we do not interrupt rebasing detached HEAD
-fi
-
-case "$topic" in
-refs/heads/??/*)
-	;;
-*)
-	exit 0 ;# we do not interrupt others.
-	;;
-esac
-
-# Now we are dealing with a topic branch being rebased
-# on top of master.  Is it OK to rebase it?
-
-# Does the topic really exist?
-git show-ref -q "$topic" || {
-	echo >&2 "No such branch $topic"
-	exit 1
-}
-
-# Is topic fully merged to master?
-not_in_master=`git rev-list --pretty=oneline ^master "$topic"`
-if test -z "$not_in_master"
-then
-	echo >&2 "$topic is fully merged to master; better remove it."
-	exit 1 ;# we could allow it, but there is no point.
-fi
-
-# Is topic ever merged to next?  If so you should not be rebasing it.
-only_next_1=`git rev-list ^master "^$topic" ${publish} | sort`
-only_next_2=`git rev-list ^master           ${publish} | sort`
-if test "$only_next_1" = "$only_next_2"
-then
-	not_in_topic=`git rev-list "^$topic" master`
-	if test -z "$not_in_topic"
-	then
-		echo >&2 "$topic is already up to date with master"
-		exit 1 ;# we could allow it, but there is no point.
-	else
-		exit 0
-	fi
-else
-	not_in_next=`git rev-list --pretty=oneline ^${publish} "$topic"`
-	/usr/bin/perl -e '
-		my $topic = $ARGV[0];
-		my $msg = "* $topic has commits already merged to public branch:\n";
-		my (%not_in_next) = map {
-			/^([0-9a-f]+) /;
-			($1 => 1);
-		} split(/\n/, $ARGV[1]);
-		for my $elem (map {
-				/^([0-9a-f]+) (.*)$/;
-				[$1 => $2];
-			} split(/\n/, $ARGV[2])) {
-			if (!exists $not_in_next{$elem->[0]}) {
-				if ($msg) {
-					print STDERR $msg;
-					undef $msg;
-				}
-				print STDERR " $elem->[1]\n";
-			}
-		}
-	' "$topic" "$not_in_next" "$not_in_master"
-	exit 1
-fi
-
-<<\DOC_END
-
-This sample hook safeguards topic branches that have been
-published from being rewound.
-
-The workflow assumed here is:
-
- * Once a topic branch forks from "master", "master" is never
-   merged into it again (either directly or indirectly).
-
- * Once a topic branch is fully cooked and merged into "master",
-   it is deleted.  If you need to build on top of it to correct
-   earlier mistakes, a new topic branch is created by forking at
-   the tip of the "master".  This is not strictly necessary, but
-   it makes it easier to keep your history simple.
-
- * Whenever you need to test or publish your changes to topic
-   branches, merge them into "next" branch.
-
-The script, being an example, hardcodes the publish branch name
-to be "next", but it is trivial to make it configurable via
-$GIT_DIR/config mechanism.
-
-With this workflow, you would want to know:
-
-(1) ... if a topic branch has ever been merged to "next".  Young
-    topic branches can have stupid mistakes you would rather
-    clean up before publishing, and things that have not been
-    merged into other branches can be easily rebased without
-    affecting other people.  But once it is published, you would
-    not want to rewind it.
-
-(2) ... if a topic branch has been fully merged to "master".
-    Then you can delete it.  More importantly, you should not
-    build on top of it -- other people may already want to
-    change things related to the topic as patches against your
-    "master", so if you need further changes, it is better to
-    fork the topic (perhaps with the same name) afresh from the
-    tip of "master".
-
-Let's look at this example:
-
-		   o---o---o---o---o---o---o---o---o---o "next"
-		  /       /           /           /
-		 /   a---a---b A     /           /
-		/   /               /           /
-	       /   /   c---c---c---c B         /
-	      /   /   /             \         /
-	     /   /   /   b---b C     \       /
-	    /   /   /   /             \     /
-    ---o---o---o---o---o---o---o---o---o---o---o "master"
-
-
-A, B and C are topic branches.
-
- * A has one fix since it was merged up to "next".
-
- * B has finished.  It has been fully merged up to "master" and "next",
-   and is ready to be deleted.
-
- * C has not merged to "next" at all.
-
-We would want to allow C to be rebased, refuse A, and encourage
-B to be deleted.
-
-To compute (1):
-
-	git rev-list ^master ^topic next
-	git rev-list ^master        next
-
-	if these match, topic has not merged in next at all.
-
-To compute (2):
-
-	git rev-list master..topic
-
-	if this is empty, it is fully merged to "master".
-
-DOC_END
-</file>
-
-<file path="frontend/.git/hooks/pre-receive.sample">
-#!/bin/sh
-#
-# An example hook script to make use of push options.
-# The example simply echoes all push options that start with 'echoback='
-# and rejects all pushes when the "reject" push option is used.
-#
-# To enable this hook, rename this file to "pre-receive".
-
-if test -n "$GIT_PUSH_OPTION_COUNT"
-then
-	i=0
-	while test "$i" -lt "$GIT_PUSH_OPTION_COUNT"
-	do
-		eval "value=\$GIT_PUSH_OPTION_$i"
-		case "$value" in
-		echoback=*)
-			echo "echo from the pre-receive-hook: ${value#*=}" >&2
-			;;
-		reject)
-			exit 1
-		esac
-		i=$((i + 1))
-	done
-fi
-</file>
-
-<file path="frontend/.git/hooks/prepare-commit-msg.sample">
-#!/bin/sh
-#
-# An example hook script to prepare the commit log message.
-# Called by "git commit" with the name of the file that has the
-# commit message, followed by the description of the commit
-# message's source.  The hook's purpose is to edit the commit
-# message file.  If the hook fails with a non-zero status,
-# the commit is aborted.
-#
-# To enable this hook, rename this file to "prepare-commit-msg".
-
-# This hook includes three examples. The first one removes the
-# "# Please enter the commit message..." help message.
-#
-# The second includes the output of "git diff --name-status -r"
-# into the message, just before the "git status" output.  It is
-# commented because it doesn't cope with --amend or with squashed
-# commits.
-#
-# The third example adds a Signed-off-by line to the message, that can
-# still be edited.  This is rarely a good idea.
-
-COMMIT_MSG_FILE=$1
-COMMIT_SOURCE=$2
-SHA1=$3
-
-/usr/bin/perl -i.bak -ne 'print unless(m/^. Please enter the commit message/..m/^#$/)' "$COMMIT_MSG_FILE"
-
-# case "$COMMIT_SOURCE,$SHA1" in
-#  ,|template,)
-#    /usr/bin/perl -i.bak -pe '
-#       print "\n" . `git diff --cached --name-status -r`
-# 	 if /^#/ && $first++ == 0' "$COMMIT_MSG_FILE" ;;
-#  *) ;;
-# esac
-
-# SOB=$(git var GIT_COMMITTER_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
-# git interpret-trailers --in-place --trailer "$SOB" "$COMMIT_MSG_FILE"
-# if test -z "$COMMIT_SOURCE"
-# then
-#   /usr/bin/perl -i.bak -pe 'print "\n" if !$first_line++' "$COMMIT_MSG_FILE"
-# fi
-</file>
-
-<file path="frontend/.git/hooks/push-to-checkout.sample">
-#!/bin/sh
-
-# An example hook script to update a checked-out tree on a git push.
-#
-# This hook is invoked by git-receive-pack(1) when it reacts to git
-# push and updates reference(s) in its repository, and when the push
-# tries to update the branch that is currently checked out and the
-# receive.denyCurrentBranch configuration variable is set to
-# updateInstead.
-#
-# By default, such a push is refused if the working tree and the index
-# of the remote repository has any difference from the currently
-# checked out commit; when both the working tree and the index match
-# the current commit, they are updated to match the newly pushed tip
-# of the branch. This hook is to be used to override the default
-# behaviour; however the code below reimplements the default behaviour
-# as a starting point for convenient modification.
-#
-# The hook receives the commit with which the tip of the current
-# branch is going to be updated:
-commit=$1
-
-# It can exit with a non-zero status to refuse the push (when it does
-# so, it must not modify the index or the working tree).
-die () {
-	echo >&2 "$*"
-	exit 1
-}
-
-# Or it can make any necessary changes to the working tree and to the
-# index to bring them to the desired state when the tip of the current
-# branch is updated to the new commit, and exit with a zero status.
-#
-# For example, the hook can simply run git read-tree -u -m HEAD "$1"
-# in order to emulate git fetch that is run in the reverse direction
-# with git push, as the two-tree form of git read-tree -u -m is
-# essentially the same as git switch or git checkout that switches
-# branches while keeping the local changes in the working tree that do
-# not interfere with the difference between the branches.
-
-# The below is a more-or-less exact translation to shell of the C code
-# for the default behaviour for git's push-to-checkout hook defined in
-# the push_to_deploy() function in builtin/receive-pack.c.
-#
-# Note that the hook will be executed from the repository directory,
-# not from the working tree, so if you want to perform operations on
-# the working tree, you will have to adapt your code accordingly, e.g.
-# by adding "cd .." or using relative paths.
-
-if ! git update-index -q --ignore-submodules --refresh
-then
-	die "Up-to-date check failed"
-fi
-
-if ! git diff-files --quiet --ignore-submodules --
-then
-	die "Working directory has unstaged changes"
-fi
-
-# This is a rough translation of:
-#
-#   head_has_history() ? "HEAD" : EMPTY_TREE_SHA1_HEX
-if git cat-file -e HEAD 2>/dev/null
-then
-	head=HEAD
-else
-	head=$(git hash-object -t tree --stdin </dev/null)
-fi
-
-if ! git diff-index --quiet --cached --ignore-submodules $head --
-then
-	die "Working directory has staged changes"
-fi
-
-if ! git read-tree -u -m "$commit"
-then
-	die "Could not update working tree to new HEAD"
-fi
-</file>
-
-<file path="frontend/.git/hooks/sendemail-validate.sample">
-#!/bin/sh
-
-# An example hook script to validate a patch (and/or patch series) before
-# sending it via email.
-#
-# The hook should exit with non-zero status after issuing an appropriate
-# message if it wants to prevent the email(s) from being sent.
-#
-# To enable this hook, rename this file to "sendemail-validate".
-#
-# By default, it will only check that the patch(es) can be applied on top of
-# the default upstream branch without conflicts in a secondary worktree. After
-# validation (successful or not) of the last patch of a series, the worktree
-# will be deleted.
-#
-# The following config variables can be set to change the default remote and
-# remote ref that are used to apply the patches against:
-#
-#   sendemail.validateRemote (default: origin)
-#   sendemail.validateRemoteRef (default: HEAD)
-#
-# Replace the TODO placeholders with appropriate checks according to your
-# needs.
-
-validate_cover_letter () {
-	file="$1"
-	# TODO: Replace with appropriate checks (e.g. spell checking).
-	true
-}
-
-validate_patch () {
-	file="$1"
-	# Ensure that the patch applies without conflicts.
-	git am -3 "$file" || return
-	# TODO: Replace with appropriate checks for this patch
-	# (e.g. checkpatch.pl).
-	true
-}
-
-validate_series () {
-	# TODO: Replace with appropriate checks for the whole series
-	# (e.g. quick build, coding style checks, etc.).
-	true
-}
-
-# main -------------------------------------------------------------------------
-
-if test "$GIT_SENDEMAIL_FILE_COUNTER" = 1
-then
-	remote=$(git config --default origin --get sendemail.validateRemote) &&
-	ref=$(git config --default HEAD --get sendemail.validateRemoteRef) &&
-	worktree=$(mktemp --tmpdir -d sendemail-validate.XXXXXXX) &&
-	git worktree add -fd --checkout "$worktree" "refs/remotes/$remote/$ref" &&
-	git config --replace-all sendemail.validateWorktree "$worktree"
-else
-	worktree=$(git config --get sendemail.validateWorktree)
-fi || {
-	echo "sendemail-validate: error: failed to prepare worktree" >&2
-	exit 1
-}
-
-unset GIT_DIR GIT_WORK_TREE
-cd "$worktree" &&
-
-if grep -q "^diff --git " "$1"
-then
-	validate_patch "$1"
-else
-	validate_cover_letter "$1"
-fi &&
-
-if test "$GIT_SENDEMAIL_FILE_COUNTER" = "$GIT_SENDEMAIL_FILE_TOTAL"
-then
-	git config --unset-all sendemail.validateWorktree &&
-	trap 'git worktree remove -ff "$worktree"' EXIT &&
-	validate_series
-fi
-</file>
-
-<file path="frontend/.git/hooks/update.sample">
-#!/bin/sh
-#
-# An example hook script to block unannotated tags from entering.
-# Called by "git receive-pack" with arguments: refname sha1-old sha1-new
-#
-# To enable this hook, rename this file to "update".
-#
-# Config
-# ------
-# hooks.allowunannotated
-#   This boolean sets whether unannotated tags will be allowed into the
-#   repository.  By default they won't be.
-# hooks.allowdeletetag
-#   This boolean sets whether deleting tags will be allowed in the
-#   repository.  By default they won't be.
-# hooks.allowmodifytag
-#   This boolean sets whether a tag may be modified after creation. By default
-#   it won't be.
-# hooks.allowdeletebranch
-#   This boolean sets whether deleting branches will be allowed in the
-#   repository.  By default they won't be.
-# hooks.denycreatebranch
-#   This boolean sets whether remotely creating branches will be denied
-#   in the repository.  By default this is allowed.
-#
-
-# --- Command line
-refname="$1"
-oldrev="$2"
-newrev="$3"
-
-# --- Safety check
-if [ -z "$GIT_DIR" ]; then
-	echo "Don't run this script from the command line." >&2
-	echo " (if you want, you could supply GIT_DIR then run" >&2
-	echo "  $0 <ref> <oldrev> <newrev>)" >&2
-	exit 1
-fi
-
-if [ -z "$refname" -o -z "$oldrev" -o -z "$newrev" ]; then
-	echo "usage: $0 <ref> <oldrev> <newrev>" >&2
-	exit 1
-fi
-
-# --- Config
-allowunannotated=$(git config --type=bool hooks.allowunannotated)
-allowdeletebranch=$(git config --type=bool hooks.allowdeletebranch)
-denycreatebranch=$(git config --type=bool hooks.denycreatebranch)
-allowdeletetag=$(git config --type=bool hooks.allowdeletetag)
-allowmodifytag=$(git config --type=bool hooks.allowmodifytag)
-
-# check for no description
-projectdesc=$(sed -e '1q' "$GIT_DIR/description")
-case "$projectdesc" in
-"Unnamed repository"* | "")
-	echo "*** Project description file hasn't been set" >&2
-	exit 1
-	;;
-esac
-
-# --- Check types
-# if $newrev is 0000...0000, it's a commit to delete a ref.
-zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
-if [ "$newrev" = "$zero" ]; then
-	newrev_type=delete
-else
-	newrev_type=$(git cat-file -t $newrev)
-fi
-
-case "$refname","$newrev_type" in
-	refs/tags/*,commit)
-		# un-annotated tag
-		short_refname=${refname##refs/tags/}
-		if [ "$allowunannotated" != "true" ]; then
-			echo "*** The un-annotated tag, $short_refname, is not allowed in this repository" >&2
-			echo "*** Use 'git tag [ -a | -s ]' for tags you want to propagate." >&2
-			exit 1
-		fi
-		;;
-	refs/tags/*,delete)
-		# delete tag
-		if [ "$allowdeletetag" != "true" ]; then
-			echo "*** Deleting a tag is not allowed in this repository" >&2
-			exit 1
-		fi
-		;;
-	refs/tags/*,tag)
-		# annotated tag
-		if [ "$allowmodifytag" != "true" ] && git rev-parse $refname > /dev/null 2>&1
-		then
-			echo "*** Tag '$refname' already exists." >&2
-			echo "*** Modifying a tag is not allowed in this repository." >&2
-			exit 1
-		fi
-		;;
-	refs/heads/*,commit)
-		# branch
-		if [ "$oldrev" = "$zero" -a "$denycreatebranch" = "true" ]; then
-			echo "*** Creating a branch is not allowed in this repository" >&2
-			exit 1
-		fi
-		;;
-	refs/heads/*,delete)
-		# delete branch
-		if [ "$allowdeletebranch" != "true" ]; then
-			echo "*** Deleting a branch is not allowed in this repository" >&2
-			exit 1
-		fi
-		;;
-	refs/remotes/*,commit)
-		# tracking branch
-		;;
-	refs/remotes/*,delete)
-		# delete tracking branch
-		if [ "$allowdeletebranch" != "true" ]; then
-			echo "*** Deleting a tracking branch is not allowed in this repository" >&2
-			exit 1
-		fi
-		;;
-	*)
-		# Anything else (is there anything else?)
-		echo "*** Update hook: unknown type of update to ref $refname of type $newrev_type" >&2
-		exit 1
-		;;
-esac
-
-# --- Finished
-exit 0
-</file>
-
-<file path="frontend/.git/info/exclude">
-# git ls-files --others --exclude-from=.git/info/exclude
-# Lines that start with '#' are comments.
-# For a project mostly in C, the following would be a good set of
-# exclude patterns (uncomment them if you want to use them):
-# *.[oa]
-# *~
-</file>
-
-<file path="frontend/.git/logs/HEAD">
-0000000000000000000000000000000000000000 941fc16fea50ca662ef9262d1eacddf6bf4545cc Amritsks <amritsks1111@gmail.com> 1758277533 +0530	commit (initial): Initial commit
-941fc16fea50ca662ef9262d1eacddf6bf4545cc 0000000000000000000000000000000000000000 Amritsks <amritsks1111@gmail.com> 1758277563 +0530	Branch: renamed refs/heads/master to refs/heads/main
-0000000000000000000000000000000000000000 941fc16fea50ca662ef9262d1eacddf6bf4545cc Amritsks <amritsks1111@gmail.com> 1758277563 +0530	Branch: renamed refs/heads/master to refs/heads/main
-</file>
-
-<file path="frontend/.git/logs/refs/heads/main">
-0000000000000000000000000000000000000000 941fc16fea50ca662ef9262d1eacddf6bf4545cc Amritsks <amritsks1111@gmail.com> 1758277533 +0530	commit (initial): Initial commit
-941fc16fea50ca662ef9262d1eacddf6bf4545cc 941fc16fea50ca662ef9262d1eacddf6bf4545cc Amritsks <amritsks1111@gmail.com> 1758277563 +0530	Branch: renamed refs/heads/master to refs/heads/main
-</file>
-
-<file path="frontend/.git/logs/refs/remotes/origin/main">
-0000000000000000000000000000000000000000 941fc16fea50ca662ef9262d1eacddf6bf4545cc Amritsks <amritsks1111@gmail.com> 1758277580 +0530	update by push
-</file>
-
-<file path="frontend/.git/refs/heads/main">
-941fc16fea50ca662ef9262d1eacddf6bf4545cc
-</file>
-
-<file path="frontend/.git/refs/remotes/origin/main">
-941fc16fea50ca662ef9262d1eacddf6bf4545cc
-</file>
-
-<file path="frontend/.gitignore">
 # Logs
-logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# OS files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+</file>
+
+<file path="backend/index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swasthya Hub</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="backend/middleware/adminAuth.js">
+const jwt = require("jsonwebtoken");
+
+module.exports = (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ message: "No token" });
+
+  const token = auth.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== "admin")
+      return res.status(403).json({ message: "Access denied" });
+    req.admin = decoded;
+    next();
+  } catch (e) {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+</file>
+
+<file path="backend/middleware/auth.js">
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const Pharmacist = require('../models/pharmacist');
+
+module.exports = async (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: 'No token' });
+
+  const token = auth.split(' ')[1];
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Example: check if payload type is pharmacist or user (customize as needed)
+    if (payload.userId) {
+      // For pharmacist use userId
+      const pharmacist = await Pharmacist.findOne({ userId: payload.userId });
+      if (!pharmacist) return res.status(401).json({ error: 'Invalid token' });
+      req.pharmacist = pharmacist;
+    } else if (payload.id) {
+      // For existing users with id
+      const user = await User.findById(payload.id);
+      if (!user) return res.status(401).json({ error: 'Invalid token' });
+      req.user = user;
+    } else {
+      return res.status(401).json({ error: 'Invalid token payload' });
+    }
+
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Auth failed' });
+  }
+};
+</file>
+
+<file path="backend/models/Admin.js">
+// backend/models/Admin.js
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const adminSchema = new mongoose.Schema({
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+});
+
+adminSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+adminSchema.methods.comparePassword = function (candidate) {
+  return bcrypt.compare(candidate, this.password);
+};
+
+module.exports = mongoose.model("Admin", adminSchema);
+</file>
+
+<file path="backend/models/BloodRequest.js">
+// backend/models/BloodRequest.js
+const mongoose = require("mongoose");
+
+const BloodRequestSchema = new mongoose.Schema(
+  {
+    group: {
+      type: String,
+      required: true,
+    },
+    units: {
+      type: Number,
+      required: true,
+    },
+    location: {
+      name: { type: String, required: true },
+      lat: { type: Number, required: false },
+      lng: { type: Number, required: false },
+    },
+    requester: {
+      type: String,
+      required: true,
+    },
+    donor: {
+      type: String,
+      default: null,
+    },
+    donorName: {
+      type: String,
+      default: null,
+    },
+    donorPhone: {
+      type: String,
+      default: null,
+    },
+    donorCode: {
+      type: String,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ["open", "accepted", "completed"],
+      default: "open",
+    },
+    meetingTime: {
+      type: String,
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
+
+// TTL index: automatically delete document 24 hours after creation
+BloodRequestSchema.index({ createdAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 });
+
+module.exports = mongoose.model("BloodRequest", BloodRequestSchema);
+</file>
+
+<file path="backend/models/Donation.js">
+// backend/models/Donation.js
+const mongoose = require('mongoose');
+
+const donationSchema = new mongoose.Schema({
+  request: { type: mongoose.Schema.Types.ObjectId, ref: 'BloodRequest', required: true },
+  donor: { type: String, required: true }, // Changed to String (email)
+  receiver: { type: String, required: true }, // Changed to String (email)
+  status: { type: String, enum: ['pending','completed'], default: 'pending' },
+  confirmationCode: { type: String },
+}, { timestamps: true });
+
+module.exports = mongoose.model('Donation', donationSchema);
+</file>
+
+<file path="backend/models/pharmacist.js">
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const pharmacistSchema = new mongoose.Schema({
+  userId: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+});
+
+pharmacistSchema.pre("save", async function(next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+pharmacistSchema.methods.comparePassword = function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+module.exports = mongoose.model("Pharmacist", pharmacistSchema);
+</file>
+
+<file path="backend/models/prescription.js">
+const mongoose = require("mongoose");
+
+const prescriptionSchema = new mongoose.Schema({
+  userName: { type: String, required: true },
+  userEmail: { type: String, required: true },
+
+  // 🧾 For uploaded prescriptions
+  filename: { type: String, default: null },
+  originalname: { type: String, default: null },
+
+  // 💊 For manual selections
+  medicines: {
+    type: [String], // array of medicine names
+    default: [],    // empty array if it's an uploaded file
+  },
+
+  // 🔖 Common fields
+  type: {
+    type: String,
+    enum: ["upload", "manual"],
+    default: "upload",
+  },
+  status: {
+    type: String,
+    enum: ["pending", "confirmed", "rejected"],
+    default: "pending",
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+
+  // 🧠 Pharmacist confirmation info
+  confirmation: {
+    allPresent: { type: Boolean, default: false },
+    medicines: { type: [String], default: [] }, // confirmed/available medicines
+  },
+});
+
+module.exports = mongoose.model("Prescription", prescriptionSchema);
+</file>
+
+<file path="backend/models/User.js">
+// backend/models/User.js
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, unique: true, sparse: true },
+    phone: { type: String, unique: true, sparse: true },
+    password: { type: String, required: true },
+    age: { type: Number },
+    gender: { type: String },
+    bloodGroup: { type: String },
+    height: { type: String },
+    weight: { type: String },
+    allergies: { type: String },
+    medicalConditions: { type: String },
+    medications: { type: String },
+    fathername: { type: String },
+    mothername: { type: String },
+    emergencyContact: {
+      name: { type: String },
+      phone: { type: String },
+      relation: { type: String },
+    },
+
+    // ✅ New field: Blood Donation Achievements
+    achievements: [
+      {
+        title: { type: String, default: "Blood Donation" },
+        date: { type: Date, default: Date.now },
+        donorCode: { type: String },
+        location: { type: String },
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("User", userSchema);
+</file>
+
+<file path="backend/models/UserProfile.js">
+// backend/models/UserProfile.js
+const mongoose = require("mongoose");
+
+const userProfileSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  name: String,
+  age: Number,
+  gender: String,
+  bloodGroup: String,
+  height: String,
+  weight: String,
+  allergies: String,
+  medicalConditions: String,
+  medications: String,
+  fathername: String,
+  mothername: String,
+  emergencyContact: {
+    name: String,
+    phone: String,
+    relation: String,
+  },
+
+  // ✅ NEW: Track user's donation achievements
+  achievements: [
+    {
+      title: { type: String, default: "Blood Donation" },
+      date: { type: Date, default: Date.now },
+      donorCode: { type: String },
+      location: { type: String },
+    },
+  ],
+});
+
+module.exports = mongoose.model("UserProfile", userProfileSchema);
+</file>
+
+<file path="backend/package.json">
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node scripts/createPharmacists.js && nodemon server.js",
+    "create-pharmacists": "node scripts/createPharmacists.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "gridfs-stream": "^1.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "mime": "^4.1.0",
+    "mime-types": "^3.0.1",
+    "mongoose": "^8.18.2",
+    "multer": "^2.0.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
+</file>
+
+<file path="backend/README.md">
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+</file>
+
+<file path="backend/routes/adminAuth.js">
+// backend/routes/adminAuth.js
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const Admin = require("../models/Admin");
+const router = express.Router();
+
+// Register admin (run once manually or via script)
+router.post("/register", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const existing = await Admin.findOne({ email });
+    if (existing) return res.status(400).json({ message: "Admin exists" });
+    const admin = new Admin({ email, password });
+    await admin.save();
+    res.status(201).json({ message: "Admin created" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Login admin
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email });
+    if (!admin) return res.status(400).json({ message: "Invalid credentials" });
+    const isMatch = await admin.comparePassword(password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign({ id: admin._id, role: "admin" }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/adminPanel.js">
+const express = require("express");
+const User = require("../models/User");
+const BloodRequest = require("../models/BloodRequest");
+const Donation = require("../models/Donation");
+const Pharmacist = require("../models/pharmacist");
+const adminAuth = require("../middleware/adminAuth");
+
+const router = express.Router();
+
+// Get all users
+router.get("/users", adminAuth, async (req, res) => {
+  const users = await User.find().select("-password");
+  res.json(users);
+});
+
+// Get all blood requests
+router.get("/requests", adminAuth, async (req, res) => {
+  const requests = await BloodRequest.find();
+  res.json(requests);
+});
+
+// Get all donations
+router.get("/donations", adminAuth, async (req, res) => {
+  const donations = await Donation.find().populate("request");
+  res.json(donations);
+});
+
+// Get all pharmacists
+router.get("/pharmacists", adminAuth, async (req, res) => {
+  const pharmacists = await Pharmacist.find().select("-password");
+  res.json(pharmacists);
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/auth.js">
+// backend/routes/auth.js
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User.js");
+
+const router = express.Router();
+
+// =========================
+// REGISTER ROUTE
+// =========================
+router.post("/register", async (req, res) => {
+  try {
+    const { name, email, phone, password, bloodGroup, age } = req.body;
+
+    // Trim values
+    if (name) req.body.name = name.trim();
+    if (email) req.body.email = email.trim();
+    if (phone) req.body.phone = phone.trim();
+    if (bloodGroup) req.body.bloodGroup = bloodGroup.trim();
+
+    // Validation
+    if (!name || !password || !bloodGroup || !age || (!email && !phone)) {
+      return res
+        .status(400)
+        .json({ error: "Name, password, blood group, age and either email or phone are required" });
+    }
+
+    // Check if user exists (by email OR phone)
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists with this email or phone" });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email: email || null,
+      phone: phone || null,
+      password: hashedPassword,
+      bloodGroup,
+      age,
+    });
+
+    await user.save();
+
+    return res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    console.error("Register error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// =========================
+// LOGIN ROUTE
+// =========================
+router.post("/login", async (req, res) => {
+  try {
+    const { email, phone, password } = req.body;
+
+    // Trim values
+    if (email) req.body.email = email.trim();
+    if (phone) req.body.phone = phone.trim();
+
+    // Validation
+    if ((!email && !phone) || !password) {
+      return res.status(400).json({ error: "Provide email or phone and password" });
+    }
+
+    // Check user existence (by email OR phone)
+    const user = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (!user) return res.status(400).json({ error: "Invalid credentials" });
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+
+    // Sign JWT
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    // Send only safe user info
+    const { password: _, ...userData } = user._doc;
+
+    return res.json({ token, user: userData });
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/bloodRoutes.js">
+// backend/routes/bloodRoutes.js
+const express = require("express");
+const BloodRequest = require("../models/BloodRequest.js");
+const Donation = require("../models/Donation.js");
+const UserProfile = require("../models/UserProfile.js");
+
+const router = express.Router();
+
+// --------------------- GET all blood requests ---------------------
+router.get("/", async (req, res) => {
+  try {
+    const requests = await BloodRequest.find();
+    res.status(200).json(requests);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    res.status(500).json({ message: "Server error while fetching requests" });
+  }
+});
+
+// --------------------- POST create a new blood request ---------------------
+router.post("/request", async (req, res) => {
+  try {
+    const { group, units, locationName, lat, lng, requesterEmail } = req.body;
+
+    if (!group || !units || !locationName || !requesterEmail) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const newRequest = new BloodRequest({
+      group,
+      units,
+      location: {
+        name: locationName,
+        lat: lat || null,
+        lng: lng || null,
+      },
+      requester: requesterEmail,
+    });
+
+    const savedRequest = await newRequest.save();
+    res.status(201).json(savedRequest);
+  } catch (err) {
+    console.error("Create request error:", err);
+    res.status(500).json({ message: "Server error while creating request" });
+  }
+});
+
+// --------------------- PUT accept a blood request ---------------------
+router.put("/:requestId/accept", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { donorEmail, donorCode, donorName, donorPhone } = req.body;
+
+    if (!donorEmail || !donorCode) {
+      return res.status(400).json({ message: "Donor email and code are required" });
+    }
+
+    const request = await BloodRequest.findById(requestId);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    if (request.status !== "open") {
+      return res.status(400).json({ message: "Request already accepted or completed" });
+    }
+
+    // Update blood request info
+    request.status = "accepted";
+    request.donor = donorEmail;
+    request.donorName = donorName;
+    request.donorPhone = donorPhone;
+    request.donorCode = donorCode;
+    const updatedRequest = await request.save();
+
+    // Create a donation record
+    const donation = new Donation({
+      request: requestId,
+      donor: donorEmail,
+      receiver: request.requester,
+      status: "pending",
+      confirmationCode: donorCode,
+    });
+    await donation.save();
+
+    res.json({
+      message: "Request accepted successfully",
+      updatedRequest,
+      donation,
+    });
+  } catch (err) {
+    console.error("Accept error:", err);
+    res.status(500).json({ message: "Server error while accepting request" });
+  }
+});
+
+// --------------------- ✅ POST confirm donation (by requester) ---------------------
+router.post("/confirmDonation/:requestId", async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const request = await BloodRequest.findById(requestId);
+
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    // Prevent re-confirmation
+    if (request.status === "completed") {
+      return res.status(400).json({ message: "Donation already confirmed" });
+    }
+    if (request.status !== "accepted") {
+      return res.status(400).json({ message: "Request not yet accepted" });
+    }
+
+    // Generate donor code if missing
+    const donorCode =
+      request.donorCode ||
+      "DONOR-" + Math.random().toString(36).substr(2, 8).toUpperCase();
+
+    // Update request status
+    request.status = "completed";
+    request.donationConfirmed = true;
+    request.donorCode = donorCode;
+    await request.save();
+
+    // Update matching donation record
+    const donation = await Donation.findOne({ request: requestId });
+    if (donation) {
+      donation.status = "completed";
+      donation.completedAt = new Date();
+      await donation.save();
+    }
+
+    // ✅ Update donor's UserProfile with achievement
+    let donorProfile = await UserProfile.findOne({ email: request.donor });
+    if (!donorProfile) {
+      donorProfile = new UserProfile({
+        email: request.donor,
+        achievements: [],
+      });
+    }
+
+    const achievement = {
+      title: "Blood Donation",
+      date: new Date(),
+      donorCode,
+      location: request.location?.name || "Unknown Location",
+    };
+
+    donorProfile.achievements.push(achievement);
+    await donorProfile.save();
+
+    return res.status(200).json({
+      message: "Donation confirmed and achievement added successfully!",
+      donorCode,
+      achievement,
+    });
+  } catch (err) {
+    console.error("Donation confirmation error:", err);
+    res.status(500).json({ message: "Server error while confirming donation" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/pharmacistAuth.js">
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const Pharmacist = require("../models/pharmacist");
+
+const router = express.Router();
+
+// backend/routes/pharmacistAuth.js
+router.post("/login", async (req, res) => {
+  const { userId, password } = req.body;
+  const pharmacist = await Pharmacist.findOne({ userId });
+  if (!pharmacist)
+    return res.status(401).json({ message: "Invalid credentials" });
+
+  const isMatch = await pharmacist.comparePassword(password);
+  if (!isMatch)
+    return res.status(401).json({ message: "Invalid credentials" });
+
+  const token = jwt.sign({ userId: pharmacist.userId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+  res.json({ token, userId: pharmacist.userId });
+});
+
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/pharmacistDashboard.js">
+const express = require('express');
+const router = express.Router();
+const Prescription = require('../models/prescription');
+const authMiddleware = require('../middleware/auth');
+
+// Get logged-in pharmacist info
+router.get('/me', authMiddleware, (req, res) => {
+  res.json({ userId: req.pharmacist.userId }); // Adjust pharmacist user object accordingly
+});
+
+// Get prescriptions assigned to logged-in pharmacist
+router.get('/prescriptions', authMiddleware, async (req, res) => {
+  try {
+    const prescriptions = await Prescription.find({ pharmacistUserId: req.pharmacist.userId });
+    res.json(prescriptions);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Accept a prescription
+router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
+
+    prescription.status = 'accepted';
+    await prescription.save();
+    res.json({ message: 'Prescription accepted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Reject a prescription
+router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
+
+    prescription.status = 'rejected';
+    await prescription.save();
+    res.json({ message: 'Prescription rejected' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/prescriptions.js">
+const express = require("express");
+const multer = require("multer");
+const Prescription = require("../models/prescription");
+const auth = require("../middleware/auth");
+const mongoose = require("mongoose");
+
+const upload = multer({ storage: multer.memoryStorage() });
+const router = express.Router();
+
+let bucket;
+
+// Initialize GridFS for image uploads
+mongoose.connection.once("open", () => {
+  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: "prescriptions",
+  });
+});
+
+/* =============================
+   📤 Upload Prescription (Image)
+   ============================= */
+router.post("/", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file)
+      return res.status(400).json({ message: "No file uploaded" });
+
+    const { originalname, buffer, mimetype } = req.file;
+    const { userName, userEmail } = req.body;
+
+    if (!userName || !userEmail) {
+      return res
+        .status(400)
+        .json({ message: "User name and email required" });
+    }
+
+    const uploadStream = bucket.openUploadStream(originalname, {
+      contentType: mimetype,
+    });
+
+    uploadStream.end(buffer);
+
+    uploadStream.on("finish", async () => {
+      const newPrescription = new Prescription({
+        originalname,
+        filename: originalname,
+        userName,
+        userEmail,
+        date: new Date(),
+        status: "pending",
+        type: "upload", // mark as uploaded
+      });
+      await newPrescription.save();
+      res.json({
+        message:
+          "Prescription uploaded and stored in MongoDB GridFS successfully!",
+      });
+    });
+
+    uploadStream.on("error", (err) => {
+      console.error(err);
+      res.status(500).json({ message: "Failed to upload." });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to upload." });
+  }
+});
+
+/* =============================
+   🧾 Get all prescriptions (protected)
+   ============================= */
+router.get("/", auth, async (req, res) => {
+  try {
+    const prescriptions = await Prescription.find();
+    res.json(prescriptions);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch prescriptions." });
+  }
+});
+
+/* =============================
+   🖼️ Serve Prescription Image
+   ============================= */
+router.get("/image/:filename", async (req, res) => {
+  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
+
+  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+
+  downloadStream.on("error", () => res.status(404).send("File not found"));
+
+  res.set("Content-Type", "image/jpeg");
+  downloadStream.pipe(res);
+});
+
+/* =============================
+   ✅ Confirm Prescription (Pharmacist)
+   ============================= */
+router.put("/:id/confirm", auth, async (req, res) => {
+  const { allPresent, medicines } = req.body;
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) {
+      return res.status(404).json({ message: "Prescription not found." });
+    }
+
+    prescription.status = "confirmed";
+    prescription.confirmation = { allPresent, medicines };
+    await prescription.save();
+
+    // Emit real-time notification if socket.io is active
+    const io = req.app.get("io");
+    if (io) {
+      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
+        prescriptionId: prescription._id,
+        allPresent,
+        medicines,
+        message: allPresent
+          ? "All medicines available"
+          : `Available medicines: ${medicines.join(", ")}`,
+      });
+    }
+
+    res.json({
+      message: "Prescription confirmed!",
+      confirmed: prescription.confirmation,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Prescription confirmation failed." });
+  }
+});
+
+/* =============================
+   💊 Manual Medicine Request (NEW)
+   ============================= */
+router.post("/manual", auth, async (req, res) => {
+  try {
+    const { medicines, userEmail, userName } = req.body;
+
+    if (!medicines || medicines.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Please provide at least one medicine." });
+    }
+
+    // Create manual prescription entry
+    const manualPrescription = new Prescription({
+      userEmail: userEmail || req.user.email,
+      userName: userName || req.user.name,
+      medicines,
+      type: "manual",
+      date: new Date(),
+      status: "pending",
+    });
+
+    await manualPrescription.save();
+    res.status(201).json({
+      message: "Manual medicine request submitted successfully!",
+    });
+  } catch (err) {
+    console.error("Manual prescription error:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to submit manual medicine request." });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/profile.js">
+// backend/routes/profile.js
+const express = require("express");
+const UserProfile = require("../models/UserProfile.js");
+
+const router = express.Router();
+
+/**
+ * GET /api/profile/:email
+ * Fetch user profile by email
+ */
+router.get("/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    if (!email) return res.status(400).json({ msg: "Email is required" });
+
+    const profile = await UserProfile.findOne({ email });
+
+    if (!profile) {
+      // Return default empty profile structure if not found
+      return res.json({
+        email,
+        name: "",
+        age: "",
+        gender: "",
+        bloodGroup: "",
+        height: "",
+        weight: "",
+        allergies: "",
+        medicalConditions: "",
+        medications: "",
+        fathername: "",
+        mothername: "",
+        emergencyContact: {
+          name: "",
+          phone: "",
+          relation: "",
+        },
+        achievements: [], // ✅ fixed (no undefined variable)
+      });
+    }
+
+    // ✅ Ensure achievements always exist
+    if (!profile.achievements) profile.achievements = [];
+
+    res.status(200).json(profile);
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+/**
+ * POST /api/profile/:email
+ * Update or create profile by email
+ */
+router.post("/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    if (!email) return res.status(400).json({ msg: "Email is required" });
+
+    const profileData = req.body;
+    profileData.email = email;
+
+    const updatedProfile = await UserProfile.findOneAndUpdate(
+      { email },
+      { $set: profileData },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+      }
+    );
+
+    res.status(200).json(updatedProfile);
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+/**
+ * POST /api/profile
+ * Alternative endpoint using email in body
+ */
+router.post("/", async (req, res) => {
+  try {
+    const { email, ...profileData } = req.body;
+    if (!email) return res.status(400).json({ msg: "Email is required" });
+
+    const updatedProfile = await UserProfile.findOneAndUpdate(
+      { email },
+      { $set: { ...profileData, email } },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+      }
+    );
+
+    res.status(200).json(updatedProfile);
+  } catch (err) {
+    console.error("Profile save error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/users.js">
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: { type: String, unique: true },
+  password: String,
+  location: {
+    lat: Number,
+    lng: Number,
+  },
+});
+
+export default mongoose.model("User", userSchema);
+</file>
+
+<file path="backend/server.js">
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
+const mime = require("mime-types");
+const Grid = require("gridfs-stream");
+const http = require("http");
+const { Server } = require("socket.io");
+
+// Importing routes
+const authRoutes = require("./routes/auth.js");
+const bloodRequestRoutes = require("./routes/bloodRoutes.js");
+const profileRoutes = require("./routes/profile.js");
+const prescriptionRoutes = require("./routes/prescriptions");
+const pharmacistAuthRoutes = require("./routes/pharmacistAuth.js");
+const pharmacistDashboardRoutes = require("./routes/pharmacistDashboard");
+
+// ✅ Newly added admin routes
+const adminAuthRoutes = require("./routes/adminAuth.js");
+const adminPanelRoutes = require("./routes/adminPanel.js");
+
+dotenv.config();
+
+const app = express();
+const server = http.createServer(app);
+
+// Setup socket.io with proper CORS
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("✅ User connected:", socket.id);
+  socket.on("identify", ({ userId }) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their personal room`);
+  });
+});
+
+// Middleware
+app.use(express.json());
+
+// Global CORS config
+app.use(
+  cors({
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
+    credentials: true,
+  })
+);
+
+// MongoDB connection and GridFS initialization
+let gfs;
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/swasthya";
+
+mongoose
+  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    const conn = mongoose.connection;
+    gfs = Grid(conn.db, mongoose.mongo);
+    gfs.collection("prescriptions");
+    console.log("✅ MongoDB connected and GridFS initialized");
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+// ==========================
+// 🔗 ROUTE MIDDLEWARES
+// ==========================
+app.use("/api/auth", authRoutes); // user auth
+app.use("/api/requests", bloodRequestRoutes); // blood requests
+app.use("/api/profile", profileRoutes); // user profiles
+app.use("/api/prescriptions", prescriptionRoutes); // prescriptions upload/view
+app.use("/api/pharmacist", pharmacistDashboardRoutes); // pharmacist dashboard
+app.use("/api/pharmacist-auth", pharmacistAuthRoutes); // pharmacist login
+
+// ✅ Admin routes
+app.use("/api/admin", adminAuthRoutes); // /api/admin/login & /api/admin/register
+app.use("/api/admin-panel", adminPanelRoutes); // protected admin operations
+
+// ==========================
+// 🗂️ STATIC + FILE STREAMING
+// ==========================
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Stream prescription images from GridFS
+app.get("/api/prescriptions/image/:filename", (req, res) => {
+  if (!gfs) {
+    return res.status(500).send("GridFS not initialized");
+  }
+
+  const filename = req.params.filename;
+
+  gfs.files.findOne({ filename }, (err, file) => {
+    if (err) {
+      console.error("Error finding file:", err);
+      return res.status(500).send("Server error");
+    }
+
+    if (!file || file.length === 0) {
+      return res.status(404).send("File not found");
+    }
+
+    const contentType =
+      file.contentType || mime.lookup(file.filename) || "application/octet-stream";
+    res.set("Content-Type", contentType);
+
+    const readstream = gfs.createReadStream(file.filename);
+
+    readstream.on("error", (err) => {
+      console.error("Readstream error:", err);
+      res.status(500).end("Error while streaming file");
+    });
+
+    readstream.pipe(res);
+  });
+});
+
+// ==========================
+// 🩺 HEALTH CHECK
+// ==========================
+app.get("/", (req, res) => {
+  res.send("✅ Swasthya Hub Backend is running successfully!");
+});
+
+// ==========================
+// ⚠️ GLOBAL ERROR HANDLER
+// ==========================
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err.stack);
+  res.status(500).json({ message: err.message || "Internal Server Error" });
+});
+
+// ==========================
+// 🚀 SERVER START
+// ==========================
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+</file>
+
+<file path="frontend/.gitignore">
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
 </file>
 
 <file path="frontend/eslint.config.js">
@@ -4420,18 +4690,24 @@ export default defineConfig({
 });
 </file>
 
-<file path="backend/.env">
-# Backend server port
-PORT=5000
-
-# MongoDB connection string (replace <user> and <pass> with your Atlas credentials)
-MONGO_URI=mongodb://localhost:27017/swasthya
-
-# JWT secret for authentication
-JWT_SECRET=supersecretkey123!@#456
-
-# Frontend URL (used for CORS)
-FRONTEND_URL=http://localhost:5173
+<file path="package.json">
+{
+  "name": "swasthyahub",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+     "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
 </file>
 
 <file path="backend/config/db.js">
@@ -4452,79 +4728,6 @@ const connectDB = async () => {
 };
 
 module.exports = connectDB;
-</file>
-
-<file path="backend/index.html">
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Swasthya Hub</title>
-    <!-- <link rel="stylesheet" href="style.css"> -->
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
-</file>
-
-<file path="backend/middleware/adminAuth.js">
-const jwt = require("jsonwebtoken");
-
-module.exports = (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: "No token" });
-
-  const token = auth.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== "admin")
-      return res.status(403).json({ message: "Access denied" });
-    req.admin = decoded;
-    next();
-  } catch (e) {
-    res.status(401).json({ message: "Invalid token" });
-  }
-};
-</file>
-
-<file path="backend/middleware/auth.js">
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Pharmacist = require('../models/pharmacist');
-
-module.exports = async (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ error: 'No token' });
-
-  const token = auth.split(' ')[1];
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Example: check if payload type is pharmacist or user (customize as needed)
-    if (payload.userId) {
-      // For pharmacist use userId
-      const pharmacist = await Pharmacist.findOne({ userId: payload.userId });
-      if (!pharmacist) return res.status(401).json({ error: 'Invalid token' });
-      req.pharmacist = pharmacist;
-    } else if (payload.id) {
-      // For existing users with id
-      const user = await User.findById(payload.id);
-      if (!user) return res.status(401).json({ error: 'Invalid token' });
-      req.user = user;
-    } else {
-      return res.status(401).json({ error: 'Invalid token payload' });
-    }
-
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Auth failed' });
-  }
-};
 </file>
 
 <file path="backend/migrateAddAchievements.js">
@@ -4566,1014 +4769,6 @@ const migrateAchievements = async () => {
 };
 
 migrateAchievements();
-</file>
-
-<file path="backend/models/Admin.js">
-// backend/models/Admin.js
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-
-const adminSchema = new mongoose.Schema({
-  email: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
-});
-
-adminSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-adminSchema.methods.comparePassword = function (candidate) {
-  return bcrypt.compare(candidate, this.password);
-};
-
-module.exports = mongoose.model("Admin", adminSchema);
-</file>
-
-<file path="backend/models/BloodRequest.js">
-// backend/models/BloodRequest.js
-const mongoose = require("mongoose");
-
-const BloodRequestSchema = new mongoose.Schema(
-  {
-    group: {
-      type: String,
-      required: true,
-    },
-    units: {
-      type: Number,
-      required: true,
-    },
-    location: {
-      name: { type: String, required: true },
-      lat: { type: Number, required: false },
-      lng: { type: Number, required: false },
-    },
-    requester: {
-      type: String,
-      required: true,
-    },
-    donor: {
-      type: String,
-      default: null,
-    },
-    donorName: {
-      type: String,
-      default: null,
-    },
-    donorPhone: {
-      type: String,
-      default: null,
-    },
-    donorCode: {
-      type: String,
-      default: null,
-    },
-    status: {
-      type: String,
-      enum: ["open", "accepted", "completed"],
-      default: "open",
-    },
-    meetingTime: {
-      type: String,
-      default: null,
-    },
-  },
-  { timestamps: true }
-);
-
-// TTL index: automatically delete document 24 hours after creation
-BloodRequestSchema.index({ createdAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 });
-
-module.exports = mongoose.model("BloodRequest", BloodRequestSchema);
-</file>
-
-<file path="backend/models/Donation.js">
-// backend/models/Donation.js
-const mongoose = require('mongoose');
-
-const donationSchema = new mongoose.Schema({
-  request: { type: mongoose.Schema.Types.ObjectId, ref: 'BloodRequest', required: true },
-  donor: { type: String, required: true }, // Changed to String (email)
-  receiver: { type: String, required: true }, // Changed to String (email)
-  status: { type: String, enum: ['pending','completed'], default: 'pending' },
-  confirmationCode: { type: String },
-}, { timestamps: true });
-
-module.exports = mongoose.model('Donation', donationSchema);
-</file>
-
-<file path="backend/models/pharmacist.js">
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-
-const pharmacistSchema = new mongoose.Schema({
-  userId: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
-});
-
-pharmacistSchema.pre("save", async function(next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-pharmacistSchema.methods.comparePassword = function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-module.exports = mongoose.model("Pharmacist", pharmacistSchema);
-</file>
-
-<file path="backend/models/prescription.js">
-const mongoose = require("mongoose");
-
-const prescriptionSchema = new mongoose.Schema({
-  userName: { type: String, required: true },
-  userEmail: { type: String, required: true },
-
-  // 🧾 For uploaded prescriptions
-  filename: { type: String, default: null },
-  originalname: { type: String, default: null },
-
-  // 💊 For manual selections
-  medicines: {
-    type: [String], // array of medicine names
-    default: [],    // empty array if it's an uploaded file
-  },
-
-  // 🔖 Common fields
-  type: {
-    type: String,
-    enum: ["upload", "manual"],
-    default: "upload",
-  },
-  status: {
-    type: String,
-    enum: ["pending", "confirmed", "rejected"],
-    default: "pending",
-  },
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-
-  // 🧠 Pharmacist confirmation info
-  confirmation: {
-    allPresent: { type: Boolean, default: false },
-    medicines: { type: [String], default: [] }, // confirmed/available medicines
-  },
-});
-
-module.exports = mongoose.model("Prescription", prescriptionSchema);
-</file>
-
-<file path="backend/models/User.js">
-// backend/models/User.js
-const mongoose = require("mongoose");
-
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    email: { type: String, unique: true, sparse: true },
-    phone: { type: String, unique: true, sparse: true },
-    password: { type: String, required: true },
-    age: { type: Number },
-    gender: { type: String },
-    bloodGroup: { type: String },
-    height: { type: String },
-    weight: { type: String },
-    allergies: { type: String },
-    medicalConditions: { type: String },
-    medications: { type: String },
-    fathername: { type: String },
-    mothername: { type: String },
-    emergencyContact: {
-      name: { type: String },
-      phone: { type: String },
-      relation: { type: String },
-    },
-
-    // ✅ New field: Blood Donation Achievements
-    achievements: [
-      {
-        title: { type: String, default: "Blood Donation" },
-        date: { type: Date, default: Date.now },
-        donorCode: { type: String },
-        location: { type: String },
-      },
-    ],
-  },
-  { timestamps: true }
-);
-
-module.exports = mongoose.model("User", userSchema);
-</file>
-
-<file path="backend/models/UserProfile.js">
-// backend/models/UserProfile.js
-const mongoose = require("mongoose");
-
-const userProfileSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  name: String,
-  age: Number,
-  gender: String,
-  bloodGroup: String,
-  height: String,
-  weight: String,
-  allergies: String,
-  medicalConditions: String,
-  medications: String,
-  fathername: String,
-  mothername: String,
-  emergencyContact: {
-    name: String,
-    phone: String,
-    relation: String,
-  },
-
-  // ✅ NEW: Track user's donation achievements
-  achievements: [
-    {
-      title: { type: String, default: "Blood Donation" },
-      date: { type: Date, default: Date.now },
-      donorCode: { type: String },
-      location: { type: String },
-    },
-  ],
-});
-
-module.exports = mongoose.model("UserProfile", userProfileSchema);
-</file>
-
-<file path="backend/package.json">
-{
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "node scripts/createPharmacists.js && nodemon server.js",
-    "create-pharmacists": "node scripts/createPharmacists.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
-    "express": "^5.1.0",
-    "gridfs-stream": "^1.1.1",
-    "jsonwebtoken": "^9.0.2",
-    "mime": "^4.1.0",
-    "mime-types": "^3.0.1",
-    "mongoose": "^8.18.2",
-    "multer": "^2.0.2",
-    "socket.io": "^4.8.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
-}
-</file>
-
-<file path="backend/README.md">
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-</file>
-
-<file path="backend/routes/adminAuth.js">
-// backend/routes/adminAuth.js
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const Admin = require("../models/Admin");
-const router = express.Router();
-
-// Register admin (run once manually or via script)
-router.post("/register", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const existing = await Admin.findOne({ email });
-    if (existing) return res.status(400).json({ message: "Admin exists" });
-    const admin = new Admin({ email, password });
-    await admin.save();
-    res.status(201).json({ message: "Admin created" });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Login admin
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(400).json({ message: "Invalid credentials" });
-    const isMatch = await admin.comparePassword(password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
-
-    const token = jwt.sign({ id: admin._id, role: "admin" }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    res.json({ token });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/adminPanel.js">
-const express = require("express");
-const User = require("../models/User");
-const BloodRequest = require("../models/BloodRequest");
-const Donation = require("../models/Donation");
-const Pharmacist = require("../models/pharmacist");
-const adminAuth = require("../middleware/adminAuth");
-
-const router = express.Router();
-
-// Get all users
-router.get("/users", adminAuth, async (req, res) => {
-  const users = await User.find().select("-password");
-  res.json(users);
-});
-
-// Get all blood requests
-router.get("/requests", adminAuth, async (req, res) => {
-  const requests = await BloodRequest.find();
-  res.json(requests);
-});
-
-// Get all donations
-router.get("/donations", adminAuth, async (req, res) => {
-  const donations = await Donation.find().populate("request");
-  res.json(donations);
-});
-
-// Get all pharmacists
-router.get("/pharmacists", adminAuth, async (req, res) => {
-  const pharmacists = await Pharmacist.find().select("-password");
-  res.json(pharmacists);
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/auth.js">
-// backend/routes/auth.js
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User.js");
-
-const router = express.Router();
-
-// =========================
-// REGISTER ROUTE
-// =========================
-router.post("/register", async (req, res) => {
-  try {
-    const { name, email, phone, password, bloodGroup, age } = req.body;
-
-    // Trim values
-    if (name) req.body.name = name.trim();
-    if (email) req.body.email = email.trim();
-    if (phone) req.body.phone = phone.trim();
-    if (bloodGroup) req.body.bloodGroup = bloodGroup.trim();
-
-    // Validation
-    if (!name || !password || !bloodGroup || !age || (!email && !phone)) {
-      return res
-        .status(400)
-        .json({ error: "Name, password, blood group, age and either email or phone are required" });
-    }
-
-    // Check if user exists (by email OR phone)
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phone }],
-    });
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists with this email or phone" });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      name,
-      email: email || null,
-      phone: phone || null,
-      password: hashedPassword,
-      bloodGroup,
-      age,
-    });
-
-    await user.save();
-
-    return res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error("Register error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// =========================
-// LOGIN ROUTE
-// =========================
-router.post("/login", async (req, res) => {
-  try {
-    const { email, phone, password } = req.body;
-
-    // Trim values
-    if (email) req.body.email = email.trim();
-    if (phone) req.body.phone = phone.trim();
-
-    // Validation
-    if ((!email && !phone) || !password) {
-      return res.status(400).json({ error: "Provide email or phone and password" });
-    }
-
-    // Check user existence (by email OR phone)
-    const user = await User.findOne({
-      $or: [{ email }, { phone }],
-    });
-    if (!user) return res.status(400).json({ error: "Invalid credentials" });
-
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
-
-    // Sign JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    // Send only safe user info
-    const { password: _, ...userData } = user._doc;
-
-    return res.json({ token, user: userData });
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/bloodRoutes.js">
-// backend/routes/bloodRoutes.js
-const express = require("express");
-const BloodRequest = require("../models/BloodRequest.js");
-const Donation = require("../models/Donation.js");
-const UserProfile = require("../models/UserProfile.js");
-
-const router = express.Router();
-
-// --------------------- GET all blood requests ---------------------
-router.get("/", async (req, res) => {
-  try {
-    const requests = await BloodRequest.find();
-    res.status(200).json(requests);
-  } catch (err) {
-    console.error("Fetch error:", err);
-    res.status(500).json({ message: "Server error while fetching requests" });
-  }
-});
-
-// --------------------- POST create a new blood request ---------------------
-router.post("/request", async (req, res) => {
-  try {
-    const { group, units, locationName, lat, lng, requesterEmail } = req.body;
-
-    if (!group || !units || !locationName || !requesterEmail) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const newRequest = new BloodRequest({
-      group,
-      units,
-      location: {
-        name: locationName,
-        lat: lat || null,
-        lng: lng || null,
-      },
-      requester: requesterEmail,
-    });
-
-    const savedRequest = await newRequest.save();
-    res.status(201).json(savedRequest);
-  } catch (err) {
-    console.error("Create request error:", err);
-    res.status(500).json({ message: "Server error while creating request" });
-  }
-});
-
-// --------------------- PUT accept a blood request ---------------------
-router.put("/:requestId/accept", async (req, res) => {
-  try {
-    const { requestId } = req.params;
-    const { donorEmail, donorCode, donorName, donorPhone } = req.body;
-
-    if (!donorEmail || !donorCode) {
-      return res.status(400).json({ message: "Donor email and code are required" });
-    }
-
-    const request = await BloodRequest.findById(requestId);
-    if (!request) return res.status(404).json({ message: "Request not found" });
-
-    if (request.status !== "open") {
-      return res.status(400).json({ message: "Request already accepted or completed" });
-    }
-
-    // Update blood request info
-    request.status = "accepted";
-    request.donor = donorEmail;
-    request.donorName = donorName;
-    request.donorPhone = donorPhone;
-    request.donorCode = donorCode;
-    const updatedRequest = await request.save();
-
-    // Create a donation record
-    const donation = new Donation({
-      request: requestId,
-      donor: donorEmail,
-      receiver: request.requester,
-      status: "pending",
-      confirmationCode: donorCode,
-    });
-    await donation.save();
-
-    res.json({
-      message: "Request accepted successfully",
-      updatedRequest,
-      donation,
-    });
-  } catch (err) {
-    console.error("Accept error:", err);
-    res.status(500).json({ message: "Server error while accepting request" });
-  }
-});
-
-// --------------------- ✅ POST confirm donation (by requester) ---------------------
-router.post("/confirmDonation/:requestId", async (req, res) => {
-  try {
-    const { requestId } = req.params;
-    const request = await BloodRequest.findById(requestId);
-
-    if (!request) return res.status(404).json({ message: "Request not found" });
-
-    // Prevent re-confirmation
-    if (request.status === "completed") {
-      return res.status(400).json({ message: "Donation already confirmed" });
-    }
-    if (request.status !== "accepted") {
-      return res.status(400).json({ message: "Request not yet accepted" });
-    }
-
-    // Generate donor code if missing
-    const donorCode =
-      request.donorCode ||
-      "DONOR-" + Math.random().toString(36).substr(2, 8).toUpperCase();
-
-    // Update request status
-    request.status = "completed";
-    request.donationConfirmed = true;
-    request.donorCode = donorCode;
-    await request.save();
-
-    // Update matching donation record
-    const donation = await Donation.findOne({ request: requestId });
-    if (donation) {
-      donation.status = "completed";
-      donation.completedAt = new Date();
-      await donation.save();
-    }
-
-    // ✅ Update donor's UserProfile with achievement
-    let donorProfile = await UserProfile.findOne({ email: request.donor });
-    if (!donorProfile) {
-      donorProfile = new UserProfile({
-        email: request.donor,
-        achievements: [],
-      });
-    }
-
-    const achievement = {
-      title: "Blood Donation",
-      date: new Date(),
-      donorCode,
-      location: request.location?.name || "Unknown Location",
-    };
-
-    donorProfile.achievements.push(achievement);
-    await donorProfile.save();
-
-    return res.status(200).json({
-      message: "Donation confirmed and achievement added successfully!",
-      donorCode,
-      achievement,
-    });
-  } catch (err) {
-    console.error("Donation confirmation error:", err);
-    res.status(500).json({ message: "Server error while confirming donation" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/pharmacistAuth.js">
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const Pharmacist = require("../models/pharmacist");
-
-const router = express.Router();
-
-// backend/routes/pharmacistAuth.js
-router.post("/login", async (req, res) => {
-  const { userId, password } = req.body;
-  const pharmacist = await Pharmacist.findOne({ userId });
-  if (!pharmacist)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-  const isMatch = await pharmacist.comparePassword(password);
-  if (!isMatch)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-  const token = jwt.sign({ userId: pharmacist.userId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-  res.json({ token, userId: pharmacist.userId });
-});
-
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/pharmacistDashboard.js">
-const express = require('express');
-const router = express.Router();
-const Prescription = require('../models/prescription');
-const authMiddleware = require('../middleware/auth');
-
-// Get logged-in pharmacist info
-router.get('/me', authMiddleware, (req, res) => {
-  res.json({ userId: req.pharmacist.userId }); // Adjust pharmacist user object accordingly
-});
-
-// Get prescriptions assigned to logged-in pharmacist
-router.get('/prescriptions', authMiddleware, async (req, res) => {
-  try {
-    const prescriptions = await Prescription.find({ pharmacistUserId: req.pharmacist.userId });
-    res.json(prescriptions);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Accept a prescription
-router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
-
-    prescription.status = 'accepted';
-    await prescription.save();
-    res.json({ message: 'Prescription accepted' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Reject a prescription
-router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
-
-    prescription.status = 'rejected';
-    await prescription.save();
-    res.json({ message: 'Prescription rejected' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/prescriptions.js">
-const express = require("express");
-const multer = require("multer");
-const Prescription = require("../models/prescription");
-const auth = require("../middleware/auth");
-const mongoose = require("mongoose");
-
-const upload = multer({ storage: multer.memoryStorage() });
-const router = express.Router();
-
-let bucket;
-
-// Initialize GridFS for image uploads
-mongoose.connection.once("open", () => {
-  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-    bucketName: "prescriptions",
-  });
-});
-
-/* =============================
-   📤 Upload Prescription (Image)
-   ============================= */
-router.post("/", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file)
-      return res.status(400).json({ message: "No file uploaded" });
-
-    const { originalname, buffer, mimetype } = req.file;
-    const { userName, userEmail } = req.body;
-
-    if (!userName || !userEmail) {
-      return res
-        .status(400)
-        .json({ message: "User name and email required" });
-    }
-
-    const uploadStream = bucket.openUploadStream(originalname, {
-      contentType: mimetype,
-    });
-
-    uploadStream.end(buffer);
-
-    uploadStream.on("finish", async () => {
-      const newPrescription = new Prescription({
-        originalname,
-        filename: originalname,
-        userName,
-        userEmail,
-        date: new Date(),
-        status: "pending",
-        type: "upload", // mark as uploaded
-      });
-      await newPrescription.save();
-      res.json({
-        message:
-          "Prescription uploaded and stored in MongoDB GridFS successfully!",
-      });
-    });
-
-    uploadStream.on("error", (err) => {
-      console.error(err);
-      res.status(500).json({ message: "Failed to upload." });
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to upload." });
-  }
-});
-
-/* =============================
-   🧾 Get all prescriptions (protected)
-   ============================= */
-router.get("/", auth, async (req, res) => {
-  try {
-    const prescriptions = await Prescription.find();
-    res.json(prescriptions);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch prescriptions." });
-  }
-});
-
-/* =============================
-   🖼️ Serve Prescription Image
-   ============================= */
-router.get("/image/:filename", async (req, res) => {
-  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
-
-  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
-
-  downloadStream.on("error", () => res.status(404).send("File not found"));
-
-  res.set("Content-Type", "image/jpeg");
-  downloadStream.pipe(res);
-});
-
-/* =============================
-   ✅ Confirm Prescription (Pharmacist)
-   ============================= */
-router.put("/:id/confirm", auth, async (req, res) => {
-  const { allPresent, medicines } = req.body;
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) {
-      return res.status(404).json({ message: "Prescription not found." });
-    }
-
-    prescription.status = "confirmed";
-    prescription.confirmation = { allPresent, medicines };
-    await prescription.save();
-
-    // Emit real-time notification if socket.io is active
-    const io = req.app.get("io");
-    if (io) {
-      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
-        prescriptionId: prescription._id,
-        allPresent,
-        medicines,
-        message: allPresent
-          ? "All medicines available"
-          : `Available medicines: ${medicines.join(", ")}`,
-      });
-    }
-
-    res.json({
-      message: "Prescription confirmed!",
-      confirmed: prescription.confirmation,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Prescription confirmation failed." });
-  }
-});
-
-/* =============================
-   💊 Manual Medicine Request (NEW)
-   ============================= */
-router.post("/manual", auth, async (req, res) => {
-  try {
-    const { medicines, userEmail, userName } = req.body;
-
-    if (!medicines || medicines.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Please provide at least one medicine." });
-    }
-
-    // Create manual prescription entry
-    const manualPrescription = new Prescription({
-      userEmail: userEmail || req.user.email,
-      userName: userName || req.user.name,
-      medicines,
-      type: "manual",
-      date: new Date(),
-      status: "pending",
-    });
-
-    await manualPrescription.save();
-    res.status(201).json({
-      message: "Manual medicine request submitted successfully!",
-    });
-  } catch (err) {
-    console.error("Manual prescription error:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to submit manual medicine request." });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/profile.js">
-// backend/routes/profile.js
-const express = require("express");
-const UserProfile = require("../models/UserProfile.js");
-
-const router = express.Router();
-
-/**
- * GET /api/profile/:email
- * Fetch user profile by email
- */
-router.get("/:email", async (req, res) => {
-  try {
-    const { email } = req.params;
-    if (!email) return res.status(400).json({ msg: "Email is required" });
-
-    const profile = await UserProfile.findOne({ email });
-
-    if (!profile) {
-      // Return default empty profile structure if not found
-      return res.json({
-        email,
-        name: "",
-        age: "",
-        gender: "",
-        bloodGroup: "",
-        height: "",
-        weight: "",
-        allergies: "",
-        medicalConditions: "",
-        medications: "",
-        fathername: "",
-        mothername: "",
-        emergencyContact: {
-          name: "",
-          phone: "",
-          relation: "",
-        },
-        achievements: [], // ✅ fixed (no undefined variable)
-      });
-    }
-
-    // ✅ Ensure achievements always exist
-    if (!profile.achievements) profile.achievements = [];
-
-    res.status(200).json(profile);
-  } catch (err) {
-    console.error("Profile fetch error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-/**
- * POST /api/profile/:email
- * Update or create profile by email
- */
-router.post("/:email", async (req, res) => {
-  try {
-    const { email } = req.params;
-    if (!email) return res.status(400).json({ msg: "Email is required" });
-
-    const profileData = req.body;
-    profileData.email = email;
-
-    const updatedProfile = await UserProfile.findOneAndUpdate(
-      { email },
-      { $set: profileData },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-      }
-    );
-
-    res.status(200).json(updatedProfile);
-  } catch (err) {
-    console.error("Profile update error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-/**
- * POST /api/profile
- * Alternative endpoint using email in body
- */
-router.post("/", async (req, res) => {
-  try {
-    const { email, ...profileData } = req.body;
-    if (!email) return res.status(400).json({ msg: "Email is required" });
-
-    const updatedProfile = await UserProfile.findOneAndUpdate(
-      { email },
-      { $set: { ...profileData, email } },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-      }
-    );
-
-    res.status(200).json(updatedProfile);
-  } catch (err) {
-    console.error("Profile save error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/users.js">
-import mongoose from "mongoose";
-
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: { type: String, unique: true },
-  password: String,
-  location: {
-    lat: Number,
-    lng: Number,
-  },
-});
-
-export default mongoose.model("User", userSchema);
 </file>
 
 <file path="backend/scripts/createadmin.js">
@@ -5619,174 +4814,6 @@ const pharmacists = [
   console.log("All pharmacist creation attempts complete!");
   mongoose.disconnect();
 })();
-</file>
-
-<file path="backend/server.js">
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
-const mime = require("mime-types");
-const Grid = require("gridfs-stream");
-const http = require("http");
-const { Server } = require("socket.io");
-
-// Importing routes
-const authRoutes = require("./routes/auth.js");
-const bloodRequestRoutes = require("./routes/bloodRoutes.js");
-const profileRoutes = require("./routes/profile.js");
-const prescriptionRoutes = require("./routes/prescriptions");
-const pharmacistAuthRoutes = require("./routes/pharmacistAuth.js");
-const pharmacistDashboardRoutes = require("./routes/pharmacistDashboard");
-
-// ✅ Newly added admin routes
-const adminAuthRoutes = require("./routes/adminAuth.js");
-const adminPanelRoutes = require("./routes/adminPanel.js");
-
-dotenv.config();
-
-const app = express();
-const server = http.createServer(app);
-
-// Setup socket.io with proper CORS
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
-    credentials: true,
-  },
-});
-
-app.set("io", io);
-
-io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
-  socket.on("identify", ({ userId }) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined their personal room`);
-  });
-});
-
-// Middleware
-app.use(express.json());
-
-// Global CORS config
-app.use(
-  cors({
-    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
-    credentials: true,
-  })
-);
-
-// MongoDB connection and GridFS initialization
-let gfs;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/swasthya";
-
-mongoose
-  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    const conn = mongoose.connection;
-    gfs = Grid(conn.db, mongoose.mongo);
-    gfs.collection("prescriptions");
-    console.log("✅ MongoDB connected and GridFS initialized");
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-    process.exit(1);
-  });
-
-// ==========================
-// 🔗 ROUTE MIDDLEWARES
-// ==========================
-app.use("/api/auth", authRoutes); // user auth
-app.use("/api/requests", bloodRequestRoutes); // blood requests
-app.use("/api/profile", profileRoutes); // user profiles
-app.use("/api/prescriptions", prescriptionRoutes); // prescriptions upload/view
-app.use("/api/pharmacist", pharmacistDashboardRoutes); // pharmacist dashboard
-app.use("/api/pharmacist-auth", pharmacistAuthRoutes); // pharmacist login
-
-// ✅ Admin routes
-app.use("/api/admin", adminAuthRoutes); // /api/admin/login & /api/admin/register
-app.use("/api/admin-panel", adminPanelRoutes); // protected admin operations
-
-// ==========================
-// 🗂️ STATIC + FILE STREAMING
-// ==========================
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Stream prescription images from GridFS
-app.get("/api/prescriptions/image/:filename", (req, res) => {
-  if (!gfs) {
-    return res.status(500).send("GridFS not initialized");
-  }
-
-  const filename = req.params.filename;
-
-  gfs.files.findOne({ filename }, (err, file) => {
-    if (err) {
-      console.error("Error finding file:", err);
-      return res.status(500).send("Server error");
-    }
-
-    if (!file || file.length === 0) {
-      return res.status(404).send("File not found");
-    }
-
-    const contentType =
-      file.contentType || mime.lookup(file.filename) || "application/octet-stream";
-    res.set("Content-Type", contentType);
-
-    const readstream = gfs.createReadStream(file.filename);
-
-    readstream.on("error", (err) => {
-      console.error("Readstream error:", err);
-      res.status(500).end("Error while streaming file");
-    });
-
-    readstream.pipe(res);
-  });
-});
-
-// ==========================
-// 🩺 HEALTH CHECK
-// ==========================
-app.get("/", (req, res) => {
-  res.send("✅ Swasthya Hub Backend is running successfully!");
-});
-
-// ==========================
-// ⚠️ GLOBAL ERROR HANDLER
-// ==========================
-app.use((err, req, res, next) => {
-  console.error("Server Error:", err.stack);
-  res.status(500).json({ message: err.message || "Internal Server Error" });
-});
-
-// ==========================
-// 🚀 SERVER START
-// ==========================
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-</file>
-
-<file path="package.json">
-{
-  "name": "swasthyahub",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-     "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\""
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "devDependencies": {
-    "concurrently": "^9.2.1"
-  }
-}
 </file>
 
 </files>
