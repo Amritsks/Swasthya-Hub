@@ -24,7 +24,7 @@ const Suraksha = () => {
       popular: false,
     },
     {
-      name: "Free / Always",
+      name: "Basic",
       price: 999,
       duration: "per Year",
       features: [
