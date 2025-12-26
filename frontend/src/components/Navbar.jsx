@@ -28,7 +28,7 @@ const Navbar = () => {
       aushadhi: "Aushadhi",
       suraksha: "Suraksha",
       raksha: "Raksha",
-      login: "LogIn",
+      login: "Logout",
     },
     hi: {
       dashboard: "डैशबोर्ड",
@@ -36,7 +36,7 @@ const Navbar = () => {
       aushadhi: "औषधि",
       suraksha: "सुरक्षा",
       raksha: "रक्षा",
-      login: "लॉगिन",
+      login: "लॉग आउट",
     },
   };
 
