@@ -177,7 +177,7 @@ const Login = () => {
                 className="w-full border p-2 rounded"
               />
               <input
-                type="text"
+                type="number"
                 name="phone"
                 placeholder="Phone (optional if using email)"
                 value={form.phone}
