@@ -71,7 +71,9 @@ router.post("/", upload.single("file"), async (req, res) => {
    ============================= */
 router.get("/", auth, async (req, res) => {
   try {
-    const prescriptions = await Prescription.find();
+    const prescriptions = await Prescription.find({
+      userId: req.user.id,
+    });
     res.json(prescriptions);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch prescriptions." });
