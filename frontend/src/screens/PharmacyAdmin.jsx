@@ -20,9 +20,12 @@ const PharmacyAdmin = () => {
 
     const fetchPharmacistInfo = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setPharmacistName(res.data.userId);
       } catch {
         localStorage.removeItem("pharmacistToken");
@@ -32,9 +35,12 @@ const PharmacyAdmin = () => {
 
     const fetchPrescriptions = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/all`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setPrescriptions(res.data);
       } catch {
         localStorage.removeItem("pharmacistToken");
@@ -70,15 +76,26 @@ const PharmacyAdmin = () => {
     setManualMedicines(manualMedicines.filter((_, i) => i !== index));
 
   const handleConfirmMedicines = async () => {
+    if (!selectedPrescription) return;
+
     const token = localStorage.getItem("pharmacistToken");
+
     try {
       await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${selectedPrescription._id}/confirm`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${
+          selectedPrescription._id
+        }/confirm`,
         {
           allPresent,
-          medicines: allPresent ? [] : manualMedicines.filter((m) => m.trim() !== ""),
+          medicines: allPresent
+            ? []
+            : manualMedicines.filter((m) => m.trim() !== ""),
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       // Update UI immediately
@@ -90,12 +107,15 @@ const PharmacyAdmin = () => {
                 status: "confirmed",
                 confirmation: {
                   allPresent,
-                  medicines: allPresent ? [] : manualMedicines.filter((m) => m.trim() !== ""),
+                  medicines: allPresent
+                    ? []
+                    : manualMedicines.filter((m) => m.trim() !== ""),
                 },
               }
             : p
         )
       );
+
       closeConfirmModal();
     } catch (error) {
       console.error(error);
@@ -103,24 +123,35 @@ const PharmacyAdmin = () => {
     }
   };
 
-  const handleReject = async (id) => {
-    const token = localStorage.getItem("pharmacistToken");
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setPrescriptions((prev) =>
-        prev.map((p) => (p._id === id ? { ...p, status: "rejected" } : p))
-      );
-    } catch (error) {
-      console.error(error);
-      alert("Error rejecting prescription");
-    }
-  };
+ const handleReject = async (id) => {
+  const token = localStorage.getItem("pharmacistToken");
+
+  const confirmReject = window.confirm(
+    "Request rejected.\nWhen the medicines become available, please respond to the request."
+  );
+
+  if (!confirmReject) return;
+
+  try {
+    await axios.put(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    setPrescriptions((prev) =>
+      prev.map((p) =>
+        p._id === id ? { ...p, status: "rejected" } : p
+      )
+    );
+  } catch (error) {
+    // console.error(error);
+    // alert("Error rejecting prescription");
+  }
+};
+
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gray-50 relative">
@@ -153,7 +184,9 @@ const PharmacyAdmin = () => {
                     <span className="font-semibold">Filename:</span>{" "}
                     {p.filename ? (
                       <a
-                        href={`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/image/${p.filename}`}
+                        href={`${
+                          import.meta.env.VITE_BACKEND_URL
+                        }/api/prescriptions/image/${p.filename}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 underline break-all"
@@ -255,7 +288,9 @@ const PharmacyAdmin = () => {
                     <input
                       type="text"
                       value={val}
-                      onChange={(e) => handleMedicineInputChange(idx, e.target.value)}
+                      onChange={(e) =>
+                        handleMedicineInputChange(idx, e.target.value)
+                      }
                       placeholder={`Medicine ${idx + 1}`}
                       className="border rounded px-2 py-1 w-full"
                     />
@@ -269,7 +304,10 @@ const PharmacyAdmin = () => {
                     )}
                   </div>
                 ))}
-                <button onClick={addMedicineField} className="text-teal-600 mt-1">
+                <button
+                  onClick={addMedicineField}
+                  className="text-teal-600 mt-1"
+                >
                   + Add Medicine
                 </button>
               </div>

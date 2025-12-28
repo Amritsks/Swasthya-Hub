@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const prescriptionSchema = new mongoose.Schema({
+   userId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  required: false,
+  },
   userName: { type: String, required: true },
   userEmail: { type: String, required: true },
 

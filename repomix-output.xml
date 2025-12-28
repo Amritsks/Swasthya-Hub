@@ -203,27 +203,32 @@ module.exports = async (req, res, next) => {
 
   const token = auth.split(' ')[1];
 
+  
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Example: check if payload type is pharmacist or user (customize as needed)
-    if (payload.userId) {
-      // For pharmacist use userId
-      const pharmacist = await Pharmacist.findOne({ userId: payload.userId });
-      if (!pharmacist) return res.status(401).json({ error: 'Invalid token' });
-      req.pharmacist = pharmacist;
-    } else if (payload.id) {
-      // For existing users with id
-      const user = await User.findById(payload.id);
-      if (!user) return res.status(401).json({ error: 'Invalid token' });
+
+    // ✅ USER TOKEN
+    if (payload._id && payload.role === "user") {
+      const user = await User.findById(payload._id);
+      if (!user) return res.status(401).json({ error: "User not found" });
       req.user = user;
-    } else {
-      return res.status(401).json({ error: 'Invalid token payload' });
+    }
+
+    // ✅ PHARMACIST TOKEN
+    else if (payload._id && payload.role === "pharmacist") {
+      const pharmacist = await Pharmacist.findById(payload._id);
+      if (!pharmacist)
+        return res.status(401).json({ error: "Pharmacist not found" });
+      req.pharmacist = pharmacist;
+    }
+
+    else {
+      return res.status(401).json({ error: "Invalid token payload" });
     }
 
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Auth failed' });
+    return res.status(401).json({ error: "Auth failed" });
   }
 };
 </file>
@@ -352,6 +357,11 @@ module.exports = mongoose.model("Pharmacist", pharmacistSchema);
 const mongoose = require("mongoose");
 
 const prescriptionSchema = new mongoose.Schema({
+   userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   userName: { type: String, required: true },
   userEmail: { type: String, required: true },
 
@@ -682,9 +692,16 @@ router.post("/login", async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
     // Sign JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+   const token = jwt.sign(
+  {
+    _id: user._id,
+    role: "user",
+    email: user.email,
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
+
 
     // Send only safe user info
     const { password: _, ...userData } = user._doc;
@@ -879,7 +896,15 @@ router.post("/login", async (req, res) => {
   if (!isMatch)
     return res.status(401).json({ message: "Invalid credentials" });
 
-  const token = jwt.sign({ userId: pharmacist.userId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+const token = jwt.sign(
+  {
+    _id: pharmacist._id,
+    role: "pharmacist",
+    email: pharmacist.email,
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
   res.json({ token, userId: pharmacist.userId });
 });
 
@@ -933,177 +958,6 @@ router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
     res.json({ message: 'Prescription rejected' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/prescriptions.js">
-const express = require("express");
-const multer = require("multer");
-const Prescription = require("../models/prescription");
-const auth = require("../middleware/auth");
-const mongoose = require("mongoose");
-
-const upload = multer({ storage: multer.memoryStorage() });
-const router = express.Router();
-
-let bucket;
-
-// Initialize GridFS for image uploads
-mongoose.connection.once("open", () => {
-  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-    bucketName: "prescriptions",
-  });
-});
-
-/* =============================
-   📤 Upload Prescription (Image)
-   ============================= */
-router.post("/", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file)
-      return res.status(400).json({ message: "No file uploaded" });
-
-    const { originalname, buffer, mimetype } = req.file;
-    const { userName, userEmail } = req.body;
-
-    if (!userName || !userEmail) {
-      return res
-        .status(400)
-        .json({ message: "User name and email required" });
-    }
-
-    const uploadStream = bucket.openUploadStream(originalname, {
-      contentType: mimetype,
-    });
-
-    uploadStream.end(buffer);
-
-    uploadStream.on("finish", async () => {
-      const newPrescription = new Prescription({
-        originalname,
-        filename: originalname,
-        userName,
-        userEmail,
-        date: new Date(),
-        status: "pending",
-        type: "upload", // mark as uploaded
-      });
-      await newPrescription.save();
-      res.json({
-        message:
-          "Prescription uploaded and stored in MongoDB GridFS successfully!",
-      });
-    });
-
-    uploadStream.on("error", (err) => {
-      console.error(err);
-      res.status(500).json({ message: "Failed to upload." });
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to upload." });
-  }
-});
-
-/* =============================
-   🧾 Get all prescriptions (protected)
-   ============================= */
-router.get("/", auth, async (req, res) => {
-  try {
-    const prescriptions = await Prescription.find();
-    res.json(prescriptions);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch prescriptions." });
-  }
-});
-
-/* =============================
-   🖼️ Serve Prescription Image
-   ============================= */
-router.get("/image/:filename", async (req, res) => {
-  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
-
-  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
-
-  downloadStream.on("error", () => res.status(404).send("File not found"));
-
-  res.set("Content-Type", "image/jpeg");
-  downloadStream.pipe(res);
-});
-
-/* =============================
-   ✅ Confirm Prescription (Pharmacist)
-   ============================= */
-router.put("/:id/confirm", auth, async (req, res) => {
-  const { allPresent, medicines } = req.body;
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) {
-      return res.status(404).json({ message: "Prescription not found." });
-    }
-
-    prescription.status = "confirmed";
-    prescription.confirmation = { allPresent, medicines };
-    await prescription.save();
-
-    // Emit real-time notification if socket.io is active
-    const io = req.app.get("io");
-    if (io) {
-      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
-        prescriptionId: prescription._id,
-        allPresent,
-        medicines,
-        message: allPresent
-          ? "All medicines available"
-          : `Available medicines: ${medicines.join(", ")}`,
-      });
-    }
-
-    res.json({
-      message: "Prescription confirmed!",
-      confirmed: prescription.confirmation,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Prescription confirmation failed." });
-  }
-});
-
-/* =============================
-   💊 Manual Medicine Request (NEW)
-   ============================= */
-router.post("/manual", auth, async (req, res) => {
-  try {
-    const { medicines, userEmail, userName } = req.body;
-
-    if (!medicines || medicines.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Please provide at least one medicine." });
-    }
-
-    // Create manual prescription entry
-    const manualPrescription = new Prescription({
-      userEmail: userEmail || req.user.email,
-      userName: userName || req.user.name,
-      medicines,
-      type: "manual",
-      date: new Date(),
-      status: "pending",
-    });
-
-    await manualPrescription.save();
-    res.status(201).json({
-      message: "Manual medicine request submitted successfully!",
-    });
-  } catch (err) {
-    console.error("Manual prescription error:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to submit manual medicine request." });
   }
 });
 
@@ -4232,6 +4086,194 @@ const migrateAchievements = async () => {
 };
 
 migrateAchievements();
+</file>
+
+<file path="backend/routes/prescriptions.js">
+const express = require("express");
+const multer = require("multer");
+const Prescription = require("../models/prescription");
+const auth = require("../middleware/auth");
+const mongoose = require("mongoose");
+
+const upload = multer({ storage: multer.memoryStorage() });
+const router = express.Router();
+
+let bucket;
+
+// Initialize GridFS for image uploads
+mongoose.connection.once("open", () => {
+  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: "prescriptions",
+  });
+});
+
+/* =============================
+   📤 Upload Prescription (Image)
+   ============================= */
+router.post("/", auth, upload.single("file"), async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "User access only" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const { originalname, buffer, mimetype } = req.file;
+    const userName = req.user.name;
+    const userEmail = req.user.email;
+
+    const uploadStream = bucket.openUploadStream(originalname, {
+      contentType: mimetype,
+    });
+
+    uploadStream.end(buffer);
+
+    uploadStream.on("finish", async () => {
+      const newPrescription = new Prescription({
+        userId: req.user._id,
+        originalname,
+        filename: originalname,
+        userName,
+        userEmail,
+        date: new Date(),
+        status: "pending",
+        type: "upload",
+      });
+
+      await newPrescription.save();
+
+      res.json({
+        message: "Prescription uploaded successfully!",
+      });
+    });
+
+    uploadStream.on("error", () => {
+      res.status(500).json({ message: "Failed to upload." });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to upload." });
+  }
+});
+
+/* =============================
+   🧾 Get User Prescriptions
+   ============================= */
+router.get("/", auth, async (req, res) => {
+  console.log("USER:", req.user);
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "User access only" });
+    }
+
+    const prescriptions = await Prescription.find({
+      userId: req.user._id,
+    }).sort({ date: -1 });
+
+    res.json(prescriptions);
+  } catch (err) {
+    console.error("Fetch prescriptions error:", err);
+    res.status(500).json({ message: "Failed to fetch prescriptions." });
+  }
+});
+
+
+/* =============================
+   🖼️ Serve Prescription Image
+   ============================= */
+router.get("/image/:filename", async (req, res) => {
+  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
+
+  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+
+  downloadStream.on("error", () => res.status(404).send("File not found"));
+
+  res.set("Content-Type", "image/jpeg");
+  downloadStream.pipe(res);
+});
+
+/* =============================
+   ✅ Confirm Prescription (Pharmacist)
+   ============================= */
+router.put("/:id/confirm", auth, async (req, res) => {
+  const { allPresent, medicines } = req.body;
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) {
+      return res.status(404).json({ message: "Prescription not found." });
+    }
+
+    prescription.status = "confirmed";
+    prescription.confirmation = { allPresent, medicines };
+    await prescription.save();
+
+    // Emit real-time notification if socket.io is active
+    const io = req.app.get("io");
+    if (io) {
+      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
+        prescriptionId: prescription._id,
+        allPresent,
+        medicines,
+        message: allPresent
+          ? "All medicines available"
+          : `Available medicines: ${medicines.join(", ")}`,
+      });
+    }
+
+    res.json({
+      message: "Prescription confirmed!",
+      confirmed: prescription.confirmation,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Prescription confirmation failed." });
+  }
+});
+
+/* =============================
+   💊 Manual Medicine Request (NEW)
+   ============================= */
+router.post("/manual", auth, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "User access only" });
+    }
+
+    const { medicines } = req.body;
+
+    if (!medicines || medicines.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Please provide at least one medicine." });
+    }
+
+    const manualPrescription = new Prescription({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: req.user.name,
+      medicines,
+      type: "manual",
+      date: new Date(),
+      status: "pending",
+    });
+
+    await manualPrescription.save();
+
+    res.status(201).json({
+      message: "Manual medicine request submitted successfully!",
+    });
+  } catch (err) {
+    console.error("Manual prescription error:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to submit manual medicine request." });
+  }
+});
+
+
+module.exports = router;
 </file>
 
 <file path="backend/scripts/createadmin.js">

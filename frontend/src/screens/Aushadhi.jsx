@@ -66,25 +66,32 @@ const Aushadhi = () => {
   };
 
   const handleUpload = async () => {
-    if (!prescription) return alert("Please select a prescription.");
-    if (!user) return alert("User not logged in.");
+  if (!prescription) return alert("Please select a prescription.");
+  if (!user || !user.token) return alert("User not logged in.");
 
-    const formData = new FormData();
-    formData.append("file", prescription);
-    formData.append("userName", user.name);
-    formData.append("userEmail", user.email);
+  const formData = new FormData();
+  formData.append("file", prescription);
 
-    try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setUploadStatus("Uploaded successfully!");
-      setPrescription(null);
-    } catch (err) {
-      console.error(err);
-      setUploadStatus("Upload failed.");
-    }
+  try {
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${user.token}`, // ✅ REQUIRED
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    setUploadStatus("Uploaded successfully!");
+    setPrescription(null);
+  } catch (err) {
+    console.error(err);
+    setUploadStatus("Upload failed.");
+  }
   };
+
 
   // Static medicines (for now)
   const medicines = [
