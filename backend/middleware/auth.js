@@ -12,6 +12,12 @@ module.exports = async (req, res, next) => {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
+    
+    if (payload.id || payload._id) {
+      const user = await User.findById(payload.id || payload._id);
+      if (!user) return res.status(401).json({ error: "Invalid token" });
+      req.user = user;
+    }
     // ✅ USER TOKEN
     if (payload._id && payload.role === "user") {
       const user = await User.findById(payload._id);

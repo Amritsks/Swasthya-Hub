@@ -5,11 +5,14 @@ import useSocket from "../hooks/useSocket";
 
 const Aushadhi = () => {
   const { user } = useAuth();
+  const token = localStorage.getItem("token");
+
   const [prescription, setPrescription] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [prescriptions, setPrescriptions] = useState([]);
   const [selectedMedicines, setSelectedMedicines] = useState([]); // ✅ new state
+  const [isUploading, setIsUploading] = useState(false);
 
   // Setup real-time socket connection for user notifications
   const socket = useSocket(user?.email);
@@ -19,7 +22,7 @@ const Aushadhi = () => {
     if (!user || !user.token) return;
     axios
       .get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
       .then((res) => {
         setPrescriptions(res.data);
@@ -66,41 +69,70 @@ const Aushadhi = () => {
   };
 
   const handleUpload = async () => {
-  if (!prescription) return alert("Please select a prescription.");
-  if (!user || !user.token) return alert("User not logged in.");
+    if (!prescription) return alert("Please select a prescription.");
+    if (!user) return alert("User not logged in.");
 
-  const formData = new FormData();
-  formData.append("file", prescription);
+    const formData = new FormData();
+    formData.append("file", prescription);
+    formData.append("userName", user.name);
+    formData.append("userEmail", user.email);
 
-  try {
-    await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${user.token}`, 
-        },
-      }
-    );
+    try {
+      setIsUploading(true); // 🔒 disable button
+      setUploadStatus("Uploading...");
 
-    setUploadStatus("Uploaded successfully!");
-    setPrescription(null);
-  } catch (err) {
-    console.error(err);
-    setUploadStatus("Upload failed.");
-  }
-};
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`, // ⚠️ important for prod
+          },
+        }
+      );
 
-
+      setUploadStatus("Uploaded successfully!");
+      setPrescription(null);
+    } catch (err) {
+      console.error(err);
+      setUploadStatus("Upload failed.");
+    } finally {
+      setIsUploading(false); // 🔓 enable button again
+    }
+  };
 
   // Static medicines (for now)
   const medicines = [
-    { name: "Paracetamol", dosage: "500mg", steps: "Take 1 tablet every 6 hours after food" },
-    { name: "Amoxicillin", dosage: "250mg", steps: "Take 1 capsule every 8 hours for 5 days" },
-    { name: "Vitamin C", dosage: "500mg", steps: "Take 1 tablet daily after breakfast" },
-    { name: "Vitamin D", dosage: "400mg", steps: "Take 1 tablet every 8 hours if pain persists" },
-    { name: "Combiflame", dosage: "400mg", steps: "Take 1 tablet every 8 hours if pain persists" },
-    { name: "Ciplox eye drops", dosage: "Apply 2 drops", steps: "Apply 2 drops twice daily" },
+    {
+      name: "Paracetamol",
+      dosage: "500mg",
+      steps: "Take 1 tablet every 6 hours after food",
+    },
+    {
+      name: "Amoxicillin",
+      dosage: "250mg",
+      steps: "Take 1 capsule every 8 hours for 5 days",
+    },
+    {
+      name: "Vitamin C",
+      dosage: "500mg",
+      steps: "Take 1 tablet daily after breakfast",
+    },
+    {
+      name: "Vitamin D",
+      dosage: "400mg",
+      steps: "Take 1 tablet every 8 hours if pain persists",
+    },
+    {
+      name: "Combiflame",
+      dosage: "400mg",
+      steps: "Take 1 tablet every 8 hours if pain persists",
+    },
+    {
+      name: "Ciplox eye drops",
+      dosage: "Apply 2 drops",
+      steps: "Apply 2 drops twice daily",
+    },
   ];
 
   const filteredMedicines = medicines.filter((medicine) =>
@@ -168,10 +200,12 @@ const Aushadhi = () => {
           </label>
           <button
             onClick={handleUpload}
-            className="bg-teal-500 text-white px-3 py-1 rounded hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-            disabled={!prescription}
+            disabled={!prescription || isUploading}
+            className={`bg-teal-500 text-white px-3 py-1 rounded 
+    ${isUploading ? "opacity-50 cursor-not-allowed" : "hover:bg-teal-600"}
+  `}
           >
-            Upload
+            {isUploading ? "Uploading..." : "Upload"}
           </button>
         </div>
       </div>
@@ -215,13 +249,19 @@ const Aushadhi = () => {
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700">
                   {medicine.name}
                 </h2>
-                <p className="text-xs sm:text-sm text-gray-500 mt-2">{medicine.dosage}</p>
-                <p className="text-xs sm:text-sm text-gray-700 mt-3">{medicine.steps}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-2">
+                  {medicine.dosage}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-700 mt-3">
+                  {medicine.steps}
+                </p>
               </div>
             );
           })
         ) : (
-          <p className="col-span-full text-center text-gray-500">No medicines found.</p>
+          <p className="col-span-full text-center text-gray-500">
+            No medicines found.
+          </p>
         )}
       </div>
 
@@ -245,7 +285,9 @@ const Aushadhi = () => {
 
       {/* CONFIRMATION SECTION */}
       <div className="mt-10 max-w-3xl mx-auto">
-        <h2 className="text-xl font-semibold mb-3">Prescription Confirmations</h2>
+        <h2 className="text-xl font-semibold mb-3">
+          Prescription Confirmations
+        </h2>
         {prescriptions.length === 0 && <p>No prescriptions found.</p>}
         {prescriptions.map((p) =>
           p.confirmation ? (
