@@ -78,8 +78,7 @@ const Aushadhi = () => {
       formData,
       {
         headers: {
-          Authorization: `Bearer ${user.token}`, // ✅ REQUIRED
-          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${user.token}`, 
         },
       }
     );
@@ -90,7 +89,8 @@ const Aushadhi = () => {
     console.error(err);
     setUploadStatus("Upload failed.");
   }
-  };
+};
+
 
 
   // Static medicines (for now)
