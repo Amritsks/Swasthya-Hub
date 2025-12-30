@@ -4,9 +4,13 @@ const Prescription = require('../models/prescription');
 const authMiddleware = require('../middleware/auth');
 
 // Get logged-in pharmacist info
-router.get('/me', authMiddleware, (req, res) => {
-  res.json({ userId: req.pharmacist.userId }); // Adjust pharmacist user object accordingly
+router.get("/me", authMiddleware, (req, res) => {
+  if (!req.pharmacist) {
+    return res.status(401).json({ message: "Not a pharmacist" });
+  }
+  res.json(req.pharmacist);
 });
+
 
 // Get prescriptions assigned to logged-in pharmacist
 router.get('/prescriptions', authMiddleware, async (req, res) => {

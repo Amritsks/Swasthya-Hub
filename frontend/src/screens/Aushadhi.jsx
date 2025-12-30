@@ -78,7 +78,7 @@ const Aushadhi = () => {
     formData.append("userEmail", user.email);
 
     try {
-      setIsUploading(true); // 🔒 disable button
+      setIsUploading(true); //  disable button
       setUploadStatus("Uploading...");
 
       await axios.post(
@@ -86,7 +86,7 @@ const Aushadhi = () => {
         formData,
         {
           headers: {
-            Authorization: `Bearer ${user.token}`, // ⚠️ important for prod
+            Authorization: `Bearer ${user.token}`, //  important for prod
           },
         }
       );
@@ -285,32 +285,44 @@ const Aushadhi = () => {
 
       {/* CONFIRMATION SECTION */}
       <div className="mt-10 max-w-3xl mx-auto">
-        <h2 className="text-xl font-semibold mb-3">
-          Prescription Confirmations
-        </h2>
-        {prescriptions.length === 0 && <p>No prescriptions found.</p>}
-        {prescriptions.map((p) =>
-          p.confirmation ? (
-            <div key={p._id} className="bg-green-100 p-4 rounded mb-4">
-              <p>
-                <strong>Status:</strong> Confirmed
-              </p>
-              <p>
-                <strong>All Medicines Present:</strong>{" "}
-                {p.confirmation.allPresent ? "Yes" : "No"}
-              </p>
-              {!p.confirmation.allPresent &&
-                p.confirmation.medicines.length > 0 && (
-                  <ul className="list-disc list-inside ml-4">
-                    {p.confirmation.medicines.map((m, idx) => (
-                      <li key={idx}>{m}</li>
-                    ))}
-                  </ul>
-                )}
-            </div>
-          ) : null
+  <h2 className="text-xl font-semibold mb-3">
+    Prescription Confirmations
+  </h2>
+
+  {prescriptions.length === 0 && <p>No prescriptions found.</p>}
+
+  {prescriptions.map((p) =>
+    p.confirmation ? (
+      <div key={p._id} className="bg-green-100 p-4 rounded mb-4">
+        <p>
+          <strong>Status:</strong> Confirmed
+        </p>
+
+        {p.confirmation.allPresent ? (
+          <p>
+            <strong>All Medicines Present:</strong> Yes
+          </p>
+        ) : (
+          <>
+            <p>
+              <strong>All Medicines Present:</strong> No
+            </p>
+
+            {p.confirmation.medicines &&
+              p.confirmation.medicines.length > 0 && (
+                <ul className="list-disc list-inside ml-4">
+                  {p.confirmation.medicines.map((m, idx) => (
+                    <li key={idx}>{m}</li>
+                  ))}
+                </ul>
+              )}
+          </>
         )}
       </div>
+    ) : null
+  )}
+</div>
+
     </div>
   );
 };

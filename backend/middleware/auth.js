@@ -1,43 +1,37 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Pharmacist = require('../models/pharmacist');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const Pharmacist = require("../models/pharmacist");
 
 module.exports = async (req, res, next) => {
   const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ error: 'No token' });
+  if (!auth) return res.status(401).json({ error: "No token" });
 
-  const token = auth.split(' ')[1];
+  const token = auth.split(" ")[1];
 
-  
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    
-    if (payload.id || payload._id) {
-      const user = await User.findById(payload.id || payload._id);
-      if (!user) return res.status(401).json({ error: "Invalid token" });
-      req.user = user;
-    }
-    // ✅ USER TOKEN
-    if (payload._id && payload.role === "user") {
-      const user = await User.findById(payload._id);
-      if (!user) return res.status(401).json({ error: "User not found" });
-      req.user = user;
-    }
-
-    // ✅ PHARMACIST TOKEN
-    else if (payload._id && payload.role === "pharmacist") {
+    // ✅ PHARMACIST FIRST
+    if (payload.role === "pharmacist") {
       const pharmacist = await Pharmacist.findById(payload._id);
       if (!pharmacist)
         return res.status(401).json({ error: "Pharmacist not found" });
+
       req.pharmacist = pharmacist;
+      return next();
     }
 
-    else {
-      return res.status(401).json({ error: "Invalid token payload" });
+    // ✅ USER
+    if (payload.role === "user") {
+      const user = await User.findById(payload._id);
+      if (!user)
+        return res.status(401).json({ error: "User not found" });
+
+      req.user = user;
+      return next();
     }
 
-    next();
+    return res.status(401).json({ error: "Invalid token role" });
   } catch (err) {
     return res.status(401).json({ error: "Auth failed" });
   }

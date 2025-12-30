@@ -1,6 +1,7 @@
 import React from "react";
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
+// import Layout from "./layout/Layout";
 import Dashboard from "./screens/Dashboard";
 import Suraksha from "./screens/Suraksha";
 import Aushadhi from "./screens/Aushadhi";

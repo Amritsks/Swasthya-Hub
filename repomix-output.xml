@@ -82,6 +82,7 @@ frontend/src/components/phoneMockup.jsx
 frontend/src/context/AuthContext.jsx
 frontend/src/hooks/useSocket.js
 frontend/src/index.css
+frontend/src/layout/Layout.jsx
 frontend/src/main.jsx
 frontend/src/screens/AdminDashboard.jsx
 frontend/src/screens/AdminLogin.jsx
@@ -107,6 +108,27 @@ package.json
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="frontend/src/layout/Layout.jsx">
+// import { Outlet } from "react-router-dom";
+// import Navbar from "../components/Navbar";
+
+// const Layout = () => {
+//   return (
+//     <div className="flex">
+//       {/* Sidebar */}
+//       <Navbar />
+
+//       {/* Page Content */}
+//       <main className="ml-16 hover:ml-64 transition-all duration-300 w-full p-4">
+//         <Outlet />
+//       </main>
+//     </div>
+//   );
+// };
+
+// export default Layout;
+</file>
 
 <file path=".gitignore">
 # ENV FILES
@@ -188,47 +210,6 @@ module.exports = (req, res, next) => {
     next();
   } catch (e) {
     res.status(401).json({ message: "Invalid token" });
-  }
-};
-</file>
-
-<file path="backend/middleware/auth.js">
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Pharmacist = require('../models/pharmacist');
-
-module.exports = async (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ error: 'No token' });
-
-  const token = auth.split(' ')[1];
-
-  
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-
-    // ✅ USER TOKEN
-    if (payload._id && payload.role === "user") {
-      const user = await User.findById(payload._id);
-      if (!user) return res.status(401).json({ error: "User not found" });
-      req.user = user;
-    }
-
-    // ✅ PHARMACIST TOKEN
-    else if (payload._id && payload.role === "pharmacist") {
-      const pharmacist = await Pharmacist.findById(payload._id);
-      if (!pharmacist)
-        return res.status(401).json({ error: "Pharmacist not found" });
-      req.pharmacist = pharmacist;
-    }
-
-    else {
-      return res.status(401).json({ error: "Invalid token payload" });
-    }
-
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: "Auth failed" });
   }
 };
 </file>
@@ -351,54 +332,6 @@ pharmacistSchema.methods.comparePassword = function(candidatePassword) {
 };
 
 module.exports = mongoose.model("Pharmacist", pharmacistSchema);
-</file>
-
-<file path="backend/models/prescription.js">
-const mongoose = require("mongoose");
-
-const prescriptionSchema = new mongoose.Schema({
-   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  userName: { type: String, required: true },
-  userEmail: { type: String, required: true },
-
-  // 🧾 For uploaded prescriptions
-  filename: { type: String, default: null },
-  originalname: { type: String, default: null },
-
-  // 💊 For manual selections
-  medicines: {
-    type: [String], // array of medicine names
-    default: [],    // empty array if it's an uploaded file
-  },
-
-  // 🔖 Common fields
-  type: {
-    type: String,
-    enum: ["upload", "manual"],
-    default: "upload",
-  },
-  status: {
-    type: String,
-    enum: ["pending", "confirmed", "rejected"],
-    default: "pending",
-  },
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-
-  // 🧠 Pharmacist confirmation info
-  confirmation: {
-    allPresent: { type: Boolean, default: false },
-    medicines: { type: [String], default: [] }, // confirmed/available medicines
-  },
-});
-
-module.exports = mongoose.model("Prescription", prescriptionSchema);
 </file>
 
 <file path="backend/models/User.js">
@@ -607,115 +540,6 @@ router.get("/pharmacists", adminAuth, async (req, res) => {
 module.exports = router;
 </file>
 
-<file path="backend/routes/auth.js">
-// backend/routes/auth.js
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User.js");
-
-const router = express.Router();
-
-// =========================
-// REGISTER ROUTE
-// =========================
-router.post("/register", async (req, res) => {
-  try {
-    const { name, email, phone, password, bloodGroup, age } = req.body;
-
-    // Trim values
-    if (name) req.body.name = name.trim();
-    if (email) req.body.email = email.trim();
-    if (phone) req.body.phone = phone.trim();
-    if (bloodGroup) req.body.bloodGroup = bloodGroup.trim();
-
-    // Validation
-    if (!name || !password || !bloodGroup || !age || (!email && !phone)) {
-      return res
-        .status(400)
-        .json({ error: "Name, password, blood group, age and either email or phone are required" });
-    }
-
-    // Check if user exists (by email OR phone)
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phone }],
-    });
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists with this email or phone" });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      name,
-      email: email || null,
-      phone: phone || null,
-      password: hashedPassword,
-      bloodGroup,
-      age,
-    });
-
-    await user.save();
-
-    return res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error("Register error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// =========================
-// LOGIN ROUTE
-// =========================
-router.post("/login", async (req, res) => {
-  try {
-    const { email, phone, password } = req.body;
-
-    // Trim values
-    if (email) req.body.email = email.trim();
-    if (phone) req.body.phone = phone.trim();
-
-    // Validation
-    if ((!email && !phone) || !password) {
-      return res.status(400).json({ error: "Provide email or phone and password" });
-    }
-
-    // Check user existence (by email OR phone)
-    const user = await User.findOne({
-      $or: [{ email }, { phone }],
-    });
-    if (!user) return res.status(400).json({ error: "Invalid credentials" });
-
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
-
-    // Sign JWT
-   const token = jwt.sign(
-  {
-    _id: user._id,
-    role: "user",
-    email: user.email,
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: "7d" }
-);
-
-
-    // Send only safe user info
-    const { password: _, ...userData } = user._doc;
-
-    return res.json({ token, user: userData });
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
 <file path="backend/routes/bloodRoutes.js">
 // backend/routes/bloodRoutes.js
 const express = require("express");
@@ -874,40 +698,6 @@ router.post("/confirmDonation/:requestId", async (req, res) => {
     res.status(500).json({ message: "Server error while confirming donation" });
   }
 });
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/pharmacistAuth.js">
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const Pharmacist = require("../models/pharmacist");
-
-const router = express.Router();
-
-// backend/routes/pharmacistAuth.js
-router.post("/login", async (req, res) => {
-  const { userId, password } = req.body;
-  const pharmacist = await Pharmacist.findOne({ userId });
-  if (!pharmacist)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-  const isMatch = await pharmacist.comparePassword(password);
-  if (!isMatch)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-const token = jwt.sign(
-  {
-    _id: pharmacist._id,
-    role: "pharmacist",
-    email: pharmacist.email,
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: "7d" }
-);
-  res.json({ token, userId: pharmacist.userId });
-});
-
 
 module.exports = router;
 </file>
@@ -1088,154 +878,6 @@ const userSchema = new mongoose.Schema({
 });
 
 export default mongoose.model("User", userSchema);
-</file>
-
-<file path="backend/server.js">
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
-const mime = require("mime-types");
-const Grid = require("gridfs-stream");
-const http = require("http");
-const { Server } = require("socket.io");
-
-// Importing routes
-const authRoutes = require("./routes/auth.js");
-const bloodRequestRoutes = require("./routes/bloodRoutes.js");
-const profileRoutes = require("./routes/profile.js");
-const prescriptionRoutes = require("./routes/prescriptions");
-const pharmacistAuthRoutes = require("./routes/pharmacistAuth.js");
-const pharmacistDashboardRoutes = require("./routes/pharmacistDashboard");
-
-// ✅ Newly added admin routes
-const adminAuthRoutes = require("./routes/adminAuth.js");
-const adminPanelRoutes = require("./routes/adminPanel.js");
-
-dotenv.config();
-
-const app = express();
-const server = http.createServer(app);
-
-// Setup socket.io with proper CORS
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
-    credentials: true,
-  },
-});
-
-app.set("io", io);
-
-io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
-  socket.on("identify", ({ userId }) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined their personal room`);
-  });
-});
-
-// Middleware
-app.use(express.json());
-
-// Global CORS config
-app.use(
-  cors({
-    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
-    credentials: true,
-  })
-);
-
-// MongoDB connection and GridFS initialization
-let gfs;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/swasthya";
-
-mongoose
-  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    const conn = mongoose.connection;
-    gfs = Grid(conn.db, mongoose.mongo);
-    gfs.collection("prescriptions");
-    console.log("✅ MongoDB connected and GridFS initialized");
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-    process.exit(1);
-  });
-
-// ==========================
-// 🔗 ROUTE MIDDLEWARES
-// ==========================
-app.use("/api/auth", authRoutes); // user auth
-app.use("/api/requests", bloodRequestRoutes); // blood requests
-app.use("/api/profile", profileRoutes); // user profiles
-app.use("/api/prescriptions", prescriptionRoutes); // prescriptions upload/view
-app.use("/api/pharmacist", pharmacistDashboardRoutes); // pharmacist dashboard
-app.use("/api/pharmacist-auth", pharmacistAuthRoutes); // pharmacist login
-
-// ✅ Admin routes
-app.use("/api/admin", adminAuthRoutes); // /api/admin/login & /api/admin/register
-app.use("/api/admin-panel", adminPanelRoutes); // protected admin operations
-
-// ==========================
-// 🗂️ STATIC + FILE STREAMING
-// ==========================
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Stream prescription images from GridFS
-app.get("/api/prescriptions/image/:filename", (req, res) => {
-  if (!gfs) {
-    return res.status(500).send("GridFS not initialized");
-  }
-
-  const filename = req.params.filename;
-
-  gfs.files.findOne({ filename }, (err, file) => {
-    if (err) {
-      console.error("Error finding file:", err);
-      return res.status(500).send("Server error");
-    }
-
-    if (!file || file.length === 0) {
-      return res.status(404).send("File not found");
-    }
-
-    const contentType =
-      file.contentType || mime.lookup(file.filename) || "application/octet-stream";
-    res.set("Content-Type", contentType);
-
-    const readstream = gfs.createReadStream(file.filename);
-
-    readstream.on("error", (err) => {
-      console.error("Readstream error:", err);
-      res.status(500).end("Error while streaming file");
-    });
-
-    readstream.pipe(res);
-  });
-});
-
-// ==========================
-// 🩺 HEALTH CHECK
-// ==========================
-app.get("/", (req, res) => {
-  res.send("✅ Swasthya Hub Backend is running successfully!");
-});
-
-// ==========================
-// ⚠️ GLOBAL ERROR HANDLER
-// ==========================
-app.use((err, req, res, next) => {
-  console.error("Server Error:", err.stack);
-  res.status(500).json({ message: err.message || "Internal Server Error" });
-});
-
-// ==========================
-// 🚀 SERVER START
-// ==========================
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 </file>
 
 <file path="frontend/.gitignore">
@@ -2033,6 +1675,7 @@ export default defineConfig({
 import React from "react";
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
+// import Layout from "./layout/Layout";
 import Dashboard from "./screens/Dashboard";
 import Suraksha from "./screens/Suraksha";
 import Aushadhi from "./screens/Aushadhi";
@@ -2226,6 +1869,29 @@ export default function useSocket(userId) {
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.nav-item span {
+  display: none;
+}
+
+.group:hover .nav-item span {
+  display: inline;
+}
+
+.nav-item:hover {
+  background-color: rgba(13, 148, 136, 0.2);
+} */
 </file>
 
 <file path="frontend/src/main.jsx">
@@ -2393,278 +2059,6 @@ const AIHealthAssist = () => {
 };
 
 export default AIHealthAssist;
-</file>
-
-<file path="frontend/src/screens/Aushadhi.jsx">
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext";
-import useSocket from "../hooks/useSocket";
-
-const Aushadhi = () => {
-  const { user } = useAuth();
-  const [prescription, setPrescription] = useState(null);
-  const [uploadStatus, setUploadStatus] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [selectedMedicines, setSelectedMedicines] = useState([]); // ✅ new state
-
-  // Setup real-time socket connection for user notifications
-  const socket = useSocket(user?.email);
-
-  // Fetch prescriptions on mount and whenever user changes
-  useEffect(() => {
-    if (!user || !user.token) return;
-    axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      })
-      .then((res) => {
-        setPrescriptions(res.data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }, [user]);
-
-  useEffect(() => {
-    if (!socket?.current) return;
-
-    const currentSocket = socket.current;
-
-    currentSocket.on("prescriptionConfirmed", (data) => {
-      alert(data.message);
-      setPrescriptions((prev) =>
-        prev.map((p) =>
-          p._id === data.prescriptionId
-            ? {
-                ...p,
-                status: "confirmed",
-                confirmation: {
-                  allPresent: data.allPresent,
-                  medicines: data.medicines || [],
-                },
-              }
-            : p
-        )
-      );
-    });
-
-    return () => {
-      if (currentSocket) {
-        currentSocket.off("prescriptionConfirmed");
-      }
-    };
-  }, [socket, user]);
-
-  // Upload prescription file
-  const handleFileChange = (e) => {
-    setPrescription(e.target.files[0]);
-    setUploadStatus("");
-  };
-
-  const handleUpload = async () => {
-    if (!prescription) return alert("Please select a prescription.");
-    if (!user) return alert("User not logged in.");
-
-    const formData = new FormData();
-    formData.append("file", prescription);
-    formData.append("userName", user.name);
-    formData.append("userEmail", user.email);
-
-    try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setUploadStatus("Uploaded successfully!");
-      setPrescription(null);
-    } catch (err) {
-      console.error(err);
-      setUploadStatus("Upload failed.");
-    }
-  };
-
-  // Static medicines (for now)
-  const medicines = [
-    { name: "Paracetamol", dosage: "500mg", steps: "Take 1 tablet every 6 hours after food" },
-    { name: "Amoxicillin", dosage: "250mg", steps: "Take 1 capsule every 8 hours for 5 days" },
-    { name: "Vitamin C", dosage: "500mg", steps: "Take 1 tablet daily after breakfast" },
-    { name: "Vitamin D", dosage: "400mg", steps: "Take 1 tablet every 8 hours if pain persists" },
-    { name: "Combiflame", dosage: "400mg", steps: "Take 1 tablet every 8 hours if pain persists" },
-    { name: "Ciplox eye drops", dosage: "Apply 2 drops", steps: "Apply 2 drops twice daily" },
-  ];
-
-  const filteredMedicines = medicines.filter((medicine) =>
-    medicine.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // ✅ Handle selecting medicine
-  const toggleSelectMedicine = (medicineName) => {
-    setSelectedMedicines((prev) =>
-      prev.includes(medicineName)
-        ? prev.filter((m) => m !== medicineName)
-        : [...prev, medicineName]
-    );
-  };
-
-  // ✅ Handle submitting selected medicines
-  const handleManualSubmit = async () => {
-    if (selectedMedicines.length === 0) {
-      return alert("Please select at least one medicine.");
-    }
-
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/manual`,
-        {
-          medicines: selectedMedicines,
-          userEmail: user.email,
-          userName: user.name,
-        },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
-      );
-      console.log("🔑 Current user token:", user?.token);
-      alert("✅ Medicine request submitted successfully!");
-      setSelectedMedicines([]);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to submit manual request.");
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-50 px-2 py-4 sm:px-6 md:px-10 lg:px-20 overflow-y-auto">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3 sm:gap-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 text-center flex-1 break-words">
-          Svasthya <span className="text-teal-600">Aushadhi</span>
-        </h1>
-
-        {/* Upload Section */}
-        <div className="flex flex-col sm:flex-row items-center gap-2">
-          <label
-            htmlFor="prescription-upload"
-            className="cursor-pointer bg-white border border-gray-300 rounded px-4 py-2 shadow-sm hover:bg-gray-100"
-          >
-            {prescription ? prescription.name : "Select Prescription"}
-            <input
-              id="prescription-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </label>
-          <button
-            onClick={handleUpload}
-            className="bg-teal-500 text-white px-3 py-1 rounded hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-            disabled={!prescription}
-          >
-            Upload
-          </button>
-        </div>
-      </div>
-
-      {/* Upload Status */}
-      {uploadStatus && (
-        <p
-          className={`text-center mb-4 font-semibold ${
-            uploadStatus.includes("success") ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {uploadStatus}
-        </p>
-      )}
-
-      {/* SEARCH BAR */}
-      <div className="mb-6 max-w-lg mx-auto">
-        <input
-          type="text"
-          aria-label="Search medicine"
-          placeholder="Search medicine..."
-          className="w-full p-3 rounded-xl border border-gray-300 shadow-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* MEDICINE LIST */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {filteredMedicines.length > 0 ? (
-          filteredMedicines.map((medicine, index) => {
-            const selected = selectedMedicines.includes(medicine.name);
-            return (
-              <div
-                key={index}
-                onClick={() => toggleSelectMedicine(medicine.name)}
-                className={`cursor-pointer bg-white shadow-md rounded-xl p-4 sm:p-6 flex flex-col justify-between hover:shadow-2xl h-full transition-all ${
-                  selected ? "ring-4 ring-teal-500" : ""
-                }`}
-              >
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700">
-                  {medicine.name}
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-500 mt-2">{medicine.dosage}</p>
-                <p className="text-xs sm:text-sm text-gray-700 mt-3">{medicine.steps}</p>
-              </div>
-            );
-          })
-        ) : (
-          <p className="col-span-full text-center text-gray-500">No medicines found.</p>
-        )}
-      </div>
-
-      {/* ✅ Submit Selected Medicines */}
-      {selectedMedicines.length > 0 && (
-        <div className="mt-6 text-center">
-          <p className="text-gray-700 mb-3">
-            Selected Medicines:{" "}
-            <span className="font-semibold text-teal-700">
-              {selectedMedicines.join(", ")}
-            </span>
-          </p>
-          <button
-            onClick={handleManualSubmit}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Submit Selected Medicines
-          </button>
-        </div>
-      )}
-
-      {/* CONFIRMATION SECTION */}
-      <div className="mt-10 max-w-3xl mx-auto">
-        <h2 className="text-xl font-semibold mb-3">Prescription Confirmations</h2>
-        {prescriptions.length === 0 && <p>No prescriptions found.</p>}
-        {prescriptions.map((p) =>
-          p.confirmation ? (
-            <div key={p._id} className="bg-green-100 p-4 rounded mb-4">
-              <p>
-                <strong>Status:</strong> Confirmed
-              </p>
-              <p>
-                <strong>All Medicines Present:</strong>{" "}
-                {p.confirmation.allPresent ? "Yes" : "No"}
-              </p>
-              {!p.confirmation.allPresent &&
-                p.confirmation.medicines.length > 0 && (
-                  <ul className="list-disc list-inside ml-4">
-                    {p.confirmation.medicines.map((m, idx) => (
-                      <li key={idx}>{m}</li>
-                    ))}
-                  </ul>
-                )}
-            </div>
-          ) : null
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default Aushadhi;
 </file>
 
 <file path="frontend/src/screens/Auth.jsx">
@@ -3138,308 +2532,6 @@ const PharmacistLogin = () => {
 };
 
 export default PharmacistLogin;
-</file>
-
-<file path="frontend/src/screens/PharmacyAdmin.jsx">
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-
-const PharmacyAdmin = () => {
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [pharmacistName, setPharmacistName] = useState("");
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedPrescription, setSelectedPrescription] = useState(null);
-  const [allPresent, setAllPresent] = useState(true);
-  const [manualMedicines, setManualMedicines] = useState([""]);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = localStorage.getItem("pharmacistToken");
-    if (!token) {
-      navigate("/pharmacist-login");
-      return;
-    }
-
-    const fetchPharmacistInfo = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setPharmacistName(res.data.userId);
-      } catch {
-        localStorage.removeItem("pharmacistToken");
-        navigate("/pharmacist-login");
-      }
-    };
-
-    const fetchPrescriptions = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setPrescriptions(res.data);
-      } catch {
-        localStorage.removeItem("pharmacistToken");
-        navigate("/pharmacist-login");
-      }
-    };
-
-    fetchPharmacistInfo();
-    fetchPrescriptions();
-  }, [navigate]);
-
-  const openConfirmModal = (prescription) => {
-    setSelectedPrescription(prescription);
-    setShowConfirmModal(true);
-    setAllPresent(true);
-    setManualMedicines([""]);
-  };
-
-  const closeConfirmModal = () => {
-    setShowConfirmModal(false);
-    setSelectedPrescription(null);
-    setManualMedicines([""]);
-  };
-
-  const handleMedicineInputChange = (index, value) => {
-    const updated = [...manualMedicines];
-    updated[index] = value;
-    setManualMedicines(updated);
-  };
-
-  const addMedicineField = () => setManualMedicines([...manualMedicines, ""]);
-  const removeMedicineField = (index) =>
-    setManualMedicines(manualMedicines.filter((_, i) => i !== index));
-
-  const handleConfirmMedicines = async () => {
-    const token = localStorage.getItem("pharmacistToken");
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${selectedPrescription._id}/confirm`,
-        {
-          allPresent,
-          medicines: allPresent ? [] : manualMedicines.filter((m) => m.trim() !== ""),
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Update UI immediately
-      setPrescriptions((prev) =>
-        prev.map((p) =>
-          p._id === selectedPrescription._id
-            ? {
-                ...p,
-                status: "confirmed",
-                confirmation: {
-                  allPresent,
-                  medicines: allPresent ? [] : manualMedicines.filter((m) => m.trim() !== ""),
-                },
-              }
-            : p
-        )
-      );
-      closeConfirmModal();
-    } catch (error) {
-      console.error(error);
-      alert("Error confirming prescription");
-    }
-  };
-
-  const handleReject = async (id) => {
-    const token = localStorage.getItem("pharmacistToken");
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setPrescriptions((prev) =>
-        prev.map((p) => (p._id === id ? { ...p, status: "rejected" } : p))
-      );
-    } catch (error) {
-      console.error(error);
-      alert("Error rejecting prescription");
-    }
-  };
-
-  return (
-    <div className="min-h-screen p-4 md:p-6 bg-gray-50 relative">
-      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-center">
-        Welcome, {pharmacistName}
-      </h1>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {prescriptions.map((p) => (
-          <div
-            key={p._id}
-            className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition-shadow flex flex-col justify-between h-full"
-          >
-            {/* Badge */}
-            <p
-              className={`text-xs px-2 py-1 rounded-full mb-2 w-fit ${
-                p.type === "manual"
-                  ? "bg-teal-100 text-teal-700"
-                  : "bg-blue-100 text-blue-700"
-              }`}
-            >
-              {p.type === "manual" ? "Manual Request" : "Uploaded Prescription"}
-            </p>
-
-            {/* Basic Info */}
-            <div className="space-y-2 mb-3">
-              {p.type === "upload" ? (
-                <>
-                  <p className="truncate">
-                    <span className="font-semibold">Filename:</span>{" "}
-                    {p.filename ? (
-                      <a
-                        href={`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/image/${p.filename}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 underline break-all"
-                      >
-                        {p.originalname}
-                      </a>
-                    ) : (
-                      <span className="text-gray-500">N/A</span>
-                    )}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-semibold">Medicines Requested:</p>
-                  {p.medicines && p.medicines.length > 0 ? (
-                    <ul className="list-disc list-inside text-gray-700 text-sm">
-                      {p.medicines.map((m, i) => (
-                        <li key={i}>{m}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 text-sm">No medicines listed</p>
-                  )}
-                </>
-              )}
-
-              <p className="break-words">
-                <span className="font-semibold">User Email:</span> {p.userEmail}
-              </p>
-              <p>
-                <span className="font-semibold">Date:</span>{" "}
-                {new Date(p.date).toLocaleString()}
-              </p>
-              <p>
-                <span className="font-semibold">Status:</span>{" "}
-                <span
-                  className={`font-semibold ${
-                    p.status === "confirmed"
-                      ? "text-green-600"
-                      : p.status === "rejected"
-                      ? "text-red-600"
-                      : "text-yellow-600"
-                  }`}
-                >
-                  {p.status || "pending"}
-                </span>
-              </p>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex flex-col gap-2 sm:flex-row mt-auto pt-2">
-              <button
-                disabled={p.status === "confirmed"}
-                onClick={() => openConfirmModal(p)}
-                className="bg-green-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 hover:bg-green-700 transition"
-              >
-                Accept
-              </button>
-              <button
-                disabled={p.status === "rejected"}
-                onClick={() => handleReject(p._id)}
-                className="bg-red-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 hover:bg-red-700 transition"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Confirm Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded shadow-lg max-w-xs w-full">
-            <h2 className="text-lg font-bold mb-2">Confirm Medicines</h2>
-            <div>
-              <label>
-                <input
-                  type="radio"
-                  checked={allPresent}
-                  onChange={() => setAllPresent(true)}
-                />{" "}
-                All medicines present
-              </label>
-              <label className="block mt-2">
-                <input
-                  type="radio"
-                  checked={!allPresent}
-                  onChange={() => setAllPresent(false)}
-                />{" "}
-                Not all present, specify:
-              </label>
-            </div>
-
-            {!allPresent && (
-              <div className="flex flex-col space-y-2 mt-2">
-                {manualMedicines.map((val, idx) => (
-                  <div key={idx} className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={val}
-                      onChange={(e) => handleMedicineInputChange(idx, e.target.value)}
-                      placeholder={`Medicine ${idx + 1}`}
-                      className="border rounded px-2 py-1 w-full"
-                    />
-                    {manualMedicines.length > 1 && (
-                      <button
-                        onClick={() => removeMedicineField(idx)}
-                        className="text-red-500"
-                      >
-                        &times;
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button onClick={addMedicineField} className="text-teal-600 mt-1">
-                  + Add Medicine
-                </button>
-              </div>
-            )}
-
-            <div className="flex space-x-3 mt-4">
-              <button
-                onClick={handleConfirmMedicines}
-                className="bg-teal-600 text-white px-3 py-1 rounded"
-              >
-                Confirm
-              </button>
-              <button
-                onClick={closeConfirmModal}
-                className="bg-gray-400 text-white px-3 py-1 rounded"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default PharmacyAdmin;
 </file>
 
 <file path="frontend/src/screens/Profile.jsx">
@@ -4088,188 +3180,191 @@ const migrateAchievements = async () => {
 migrateAchievements();
 </file>
 
-<file path="backend/routes/prescriptions.js">
-const express = require("express");
-const multer = require("multer");
-const Prescription = require("../models/prescription");
-const auth = require("../middleware/auth");
+<file path="backend/models/prescription.js">
 const mongoose = require("mongoose");
 
-const upload = multer({ storage: multer.memoryStorage() });
+const prescriptionSchema = new mongoose.Schema({
+   userId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  required: false,
+  },
+  userName: { type: String, required: true },
+  userEmail: { type: String, required: true },
+
+  // 🧾 For uploaded prescriptions
+  filename: { type: String, default: null },
+  originalname: { type: String, default: null },
+
+  // 💊 For manual selections
+  medicines: {
+    type: [String], // array of medicine names
+    default: [],    // empty array if it's an uploaded file
+  },
+
+  // 🔖 Common fields
+  type: {
+    type: String,
+    enum: ["upload", "manual"],
+    default: "upload",
+  },
+  status: {
+    type: String,
+    enum: ["pending", "confirmed", "rejected"],
+    default: "pending",
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+
+  // 🧠 Pharmacist confirmation info
+  confirmation: {
+    allPresent: { type: Boolean, default: false },
+    medicines: { type: [String], default: [] }, // confirmed/available medicines
+  },
+});
+
+module.exports = mongoose.model("Prescription", prescriptionSchema);
+</file>
+
+<file path="backend/routes/auth.js">
+// backend/routes/auth.js
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User.js");
+
 const router = express.Router();
 
-let bucket;
-
-// Initialize GridFS for image uploads
-mongoose.connection.once("open", () => {
-  bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
-    bucketName: "prescriptions",
-  });
-});
-
-/* =============================
-   📤 Upload Prescription (Image)
-   ============================= */
-router.post("/", auth, upload.single("file"), async (req, res) => {
+// =========================
+// REGISTER ROUTE
+// =========================
+router.post("/register", async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(403).json({ message: "User access only" });
-    }
+    const { name, email, phone, password, bloodGroup, age } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
+    // Trim values
+    if (name) req.body.name = name.trim();
+    if (email) req.body.email = email.trim();
+    if (phone) req.body.phone = phone.trim();
+    if (bloodGroup) req.body.bloodGroup = bloodGroup.trim();
 
-    const { originalname, buffer, mimetype } = req.file;
-    const userName = req.user.name;
-    const userEmail = req.user.email;
-
-    const uploadStream = bucket.openUploadStream(originalname, {
-      contentType: mimetype,
-    });
-
-    uploadStream.end(buffer);
-
-    uploadStream.on("finish", async () => {
-      const newPrescription = new Prescription({
-        userId: req.user._id,
-        originalname,
-        filename: originalname,
-        userName,
-        userEmail,
-        date: new Date(),
-        status: "pending",
-        type: "upload",
-      });
-
-      await newPrescription.save();
-
-      res.json({
-        message: "Prescription uploaded successfully!",
-      });
-    });
-
-    uploadStream.on("error", () => {
-      res.status(500).json({ message: "Failed to upload." });
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to upload." });
-  }
-});
-
-/* =============================
-   🧾 Get User Prescriptions
-   ============================= */
-router.get("/", auth, async (req, res) => {
-  console.log("USER:", req.user);
-  try {
-    if (!req.user) {
-      return res.status(403).json({ message: "User access only" });
-    }
-
-    const prescriptions = await Prescription.find({
-      userId: req.user._id,
-    }).sort({ date: -1 });
-
-    res.json(prescriptions);
-  } catch (err) {
-    console.error("Fetch prescriptions error:", err);
-    res.status(500).json({ message: "Failed to fetch prescriptions." });
-  }
-});
-
-
-/* =============================
-   🖼️ Serve Prescription Image
-   ============================= */
-router.get("/image/:filename", async (req, res) => {
-  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
-
-  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
-
-  downloadStream.on("error", () => res.status(404).send("File not found"));
-
-  res.set("Content-Type", "image/jpeg");
-  downloadStream.pipe(res);
-});
-
-/* =============================
-   ✅ Confirm Prescription (Pharmacist)
-   ============================= */
-router.put("/:id/confirm", auth, async (req, res) => {
-  const { allPresent, medicines } = req.body;
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) {
-      return res.status(404).json({ message: "Prescription not found." });
-    }
-
-    prescription.status = "confirmed";
-    prescription.confirmation = { allPresent, medicines };
-    await prescription.save();
-
-    // Emit real-time notification if socket.io is active
-    const io = req.app.get("io");
-    if (io) {
-      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
-        prescriptionId: prescription._id,
-        allPresent,
-        medicines,
-        message: allPresent
-          ? "All medicines available"
-          : `Available medicines: ${medicines.join(", ")}`,
-      });
-    }
-
-    res.json({
-      message: "Prescription confirmed!",
-      confirmed: prescription.confirmation,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Prescription confirmation failed." });
-  }
-});
-
-/* =============================
-   💊 Manual Medicine Request (NEW)
-   ============================= */
-router.post("/manual", auth, async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(403).json({ message: "User access only" });
-    }
-
-    const { medicines } = req.body;
-
-    if (!medicines || medicines.length === 0) {
+    // Validation
+    if (!name || !password || !bloodGroup || !age || (!email && !phone)) {
       return res
         .status(400)
-        .json({ message: "Please provide at least one medicine." });
+        .json({ error: "Name, password, blood group, age and either email or phone are required" });
     }
 
-    const manualPrescription = new Prescription({
-      userId: req.user._id,
-      userEmail: req.user.email,
-      userName: req.user.name,
-      medicines,
-      type: "manual",
-      date: new Date(),
-      status: "pending",
+    // Check if user exists (by email OR phone)
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists with this email or phone" });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      name,
+      email: email || null,
+      phone: phone || null,
+      password: hashedPassword,
+      bloodGroup,
+      age,
     });
 
-    await manualPrescription.save();
+    await user.save();
 
-    res.status(201).json({
-      message: "Manual medicine request submitted successfully!",
-    });
+    return res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-    console.error("Manual prescription error:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to submit manual medicine request." });
+    console.error("Register error:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// =========================
+// LOGIN ROUTE
+// =========================
+router.post("/login", async (req, res) => {
+  try {
+    const { email, phone, password } = req.body;
+
+    // Trim values
+    if (email) req.body.email = email.trim();
+    if (phone) req.body.phone = phone.trim();
+
+    // Validation
+    if ((!email && !phone) || !password) {
+      return res.status(400).json({ error: "Provide email or phone and password" });
+    }
+
+    // Check user existence (by email OR phone)
+    const user = await User.findOne({
+      $or: [{ email }, { phone }],
+    });
+    if (!user) return res.status(400).json({ error: "Invalid credentials" });
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+
+    // Sign JWT
+   const token = jwt.sign(
+  {
+    _id: user._id,
+    role: "user",
+    email: user.email,
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
+
+
+    // Send only safe user info
+    const { password: _, ...userData } = user._doc;
+
+    return res.json({ token, user: userData });
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/pharmacistAuth.js">
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const Pharmacist = require("../models/pharmacist");
+
+const router = express.Router();
+
+// backend/routes/pharmacistAuth.js
+router.post("/login", async (req, res) => {
+  const { userId, password } = req.body;
+  const pharmacist = await Pharmacist.findOne({ userId });
+  if (!pharmacist)
+    return res.status(401).json({ message: "Invalid credentials" });
+
+  const isMatch = await pharmacist.comparePassword(password);
+  if (!isMatch)
+    return res.status(401).json({ message: "Invalid credentials" });
+
+const token = jwt.sign(
+  {
+    _id: pharmacist._id,
+    role: "pharmacist",
+    email: pharmacist.email,
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
+  res.json({ token, userId: pharmacist.userId });
 });
 
 
@@ -4319,6 +3414,155 @@ const pharmacists = [
   console.log("All pharmacist creation attempts complete!");
   mongoose.disconnect();
 })();
+</file>
+
+<file path="backend/server.js">
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
+const mime = require("mime-types");
+const Grid = require("gridfs-stream");
+const http = require("http");
+const { Server } = require("socket.io");
+
+// Importing routes
+const authRoutes = require("./routes/auth.js");
+const bloodRequestRoutes = require("./routes/bloodRoutes.js");
+const profileRoutes = require("./routes/profile.js");
+const prescriptionRoutes = require("./routes/prescriptions");
+const pharmacistAuthRoutes = require("./routes/pharmacistAuth.js");
+const pharmacistDashboardRoutes = require("./routes/pharmacistDashboard");
+
+// ✅ Newly added admin routes
+const adminAuthRoutes = require("./routes/adminAuth.js");
+const adminPanelRoutes = require("./routes/adminPanel.js");
+
+dotenv.config();
+
+const app = express();
+const server = http.createServer(app);
+
+// Setup socket.io with proper CORS
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("✅ User connected:", socket.id);
+  socket.on("identify", ({ userId }) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their personal room`);
+  });
+});
+
+// Middleware
+app.use(express.json());
+
+// Global CORS config
+app.use(
+  cors({
+    origin: ["http://localhost:3000", process.env.FRONTEND_URL],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// MongoDB connection and GridFS initialization
+let gfs;
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/swasthya";
+
+mongoose
+  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    const conn = mongoose.connection;
+    gfs = Grid(conn.db, mongoose.mongo);
+    gfs.collection("prescriptions");
+    console.log("✅ MongoDB connected and GridFS initialized");
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+// ==========================
+// 🔗 ROUTE MIDDLEWARES
+// ==========================
+app.use("/api/auth", authRoutes); // user auth
+app.use("/api/requests", bloodRequestRoutes); // blood requests
+app.use("/api/profile", profileRoutes); // user profiles
+app.use("/api/prescriptions", prescriptionRoutes); // prescriptions upload/view
+app.use("/api/pharmacist", pharmacistDashboardRoutes); // pharmacist dashboard
+app.use("/api/pharmacist-auth", pharmacistAuthRoutes); // pharmacist login
+
+// ✅ Admin routes
+app.use("/api/admin", adminAuthRoutes); // /api/admin/login & /api/admin/register
+app.use("/api/admin-panel", adminPanelRoutes); // protected admin operations
+
+// ==========================
+// 🗂️ STATIC + FILE STREAMING
+// ==========================
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Stream prescription images from GridFS
+app.get("/api/prescriptions/image/:filename", (req, res) => {
+  if (!gfs) {
+    return res.status(500).send("GridFS not initialized");
+  }
+
+  const filename = req.params.filename;
+
+  gfs.files.findOne({ filename }, (err, file) => {
+    if (err) {
+      console.error("Error finding file:", err);
+      return res.status(500).send("Server error");
+    }
+
+    if (!file || file.length === 0) {
+      return res.status(404).send("File not found");
+    }
+
+    const contentType =
+      file.contentType || mime.lookup(file.filename) || "application/octet-stream";
+    res.set("Content-Type", contentType);
+
+    const readstream = gfs.createReadStream(file.filename);
+
+    readstream.on("error", (err) => {
+      console.error("Readstream error:", err);
+      res.status(500).end("Error while streaming file");
+    });
+
+    readstream.pipe(res);
+  });
+});
+
+// ==========================
+// 🩺 HEALTH CHECK
+// ==========================
+app.get("/", (req, res) => {
+  res.send("✅ Swasthya Hub Backend is running successfully!");
+});
+
+// ==========================
+// ⚠️ GLOBAL ERROR HANDLER
+// ==========================
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err.stack);
+  res.status(500).json({ message: err.message || "Internal Server Error" });
+});
+
+// ==========================
+// 🚀 SERVER START
+// ==========================
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 </file>
 
 <file path="frontend/src/components/Navbar.jsx">
@@ -4676,6 +3920,346 @@ const Login = () => {
 export default Login;
 </file>
 
+<file path="frontend/src/screens/PharmacyAdmin.jsx">
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const PharmacyAdmin = () => {
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [pharmacistName, setPharmacistName] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [allPresent, setAllPresent] = useState(true);
+  const [manualMedicines, setManualMedicines] = useState([""]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("pharmacistToken");
+    if (!token) {
+      navigate("/pharmacist-login");
+      return;
+    }
+
+    const fetchPharmacistInfo = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setPharmacistName(res.data.userId);
+      } catch {
+        localStorage.removeItem("pharmacistToken");
+        navigate("/pharmacist-login");
+      }
+    };
+
+    const fetchPrescriptions = async () => {
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/all`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setPrescriptions(res.data);
+      } catch {
+        localStorage.removeItem("pharmacistToken");
+        navigate("/pharmacist-login");
+      }
+    };
+
+    fetchPharmacistInfo();
+    fetchPrescriptions();
+  }, [navigate]);
+
+  const openConfirmModal = (prescription) => {
+    setSelectedPrescription(prescription);
+    setShowConfirmModal(true);
+    setAllPresent(true);
+    setManualMedicines([""]);
+  };
+
+  const closeConfirmModal = () => {
+    setShowConfirmModal(false);
+    setSelectedPrescription(null);
+    setManualMedicines([""]);
+  };
+
+  const handleMedicineInputChange = (index, value) => {
+    const updated = [...manualMedicines];
+    updated[index] = value;
+    setManualMedicines(updated);
+  };
+
+  const addMedicineField = () => setManualMedicines([...manualMedicines, ""]);
+  const removeMedicineField = (index) =>
+    setManualMedicines(manualMedicines.filter((_, i) => i !== index));
+
+  const handleConfirmMedicines = async () => {
+    if (!selectedPrescription) return;
+
+    const token = localStorage.getItem("pharmacistToken");
+
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${
+          selectedPrescription._id
+        }/confirm`,
+        {
+          allPresent,
+          medicines: allPresent
+            ? []
+            : manualMedicines.filter((m) => m.trim() !== ""),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Update UI immediately
+      setPrescriptions((prev) =>
+        prev.map((p) =>
+          p._id === selectedPrescription._id
+            ? {
+                ...p,
+                status: "confirmed",
+                confirmation: {
+                  allPresent,
+                  medicines: allPresent
+                    ? []
+                    : manualMedicines.filter((m) => m.trim() !== ""),
+                },
+              }
+            : p
+        )
+      );
+
+      closeConfirmModal();
+    } catch (error) {
+      console.error(error);
+      alert("Error confirming prescription");
+    }
+  };
+
+ const handleReject = async (id) => {
+  const token = localStorage.getItem("pharmacistToken");
+
+  const confirmReject = window.confirm(
+    "Request rejected.\nWhen the medicines become available, please respond to the request."
+  );
+
+  if (!confirmReject) return;
+
+  try {
+    await axios.put(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    setPrescriptions((prev) =>
+      prev.map((p) =>
+        p._id === id ? { ...p, status: "rejected" } : p
+      )
+    );
+  } catch (error) {
+    // console.error(error);
+    // alert("Error rejecting prescription");
+  }
+};
+
+
+  return (
+    <div className="min-h-screen p-4 md:p-6 bg-gray-50 relative">
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-center">
+        Welcome, {pharmacistName}
+      </h1>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {prescriptions.map((p) => (
+          <div
+            key={p._id}
+            className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition-shadow flex flex-col justify-between h-full"
+          >
+            {/* Badge */}
+            <p
+              className={`text-xs px-2 py-1 rounded-full mb-2 w-fit ${
+                p.type === "manual"
+                  ? "bg-teal-100 text-teal-700"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {p.type === "manual" ? "Manual Request" : "Uploaded Prescription"}
+            </p>
+
+            {/* Basic Info */}
+            <div className="space-y-2 mb-3">
+              {p.type === "upload" ? (
+                <>
+                  <p className="truncate">
+                    <span className="font-semibold">Filename:</span>{" "}
+                    {p.filename ? (
+                      <a
+                        href={`${
+                          import.meta.env.VITE_BACKEND_URL
+                        }/api/prescriptions/image/${p.filename}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline break-all"
+                      >
+                        {p.originalname}
+                      </a>
+                    ) : (
+                      <span className="text-gray-500">N/A</span>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold">Medicines Requested:</p>
+                  {p.medicines && p.medicines.length > 0 ? (
+                    <ul className="list-disc list-inside text-gray-700 text-sm">
+                      {p.medicines.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No medicines listed</p>
+                  )}
+                </>
+              )}
+
+              <p className="break-words">
+                <span className="font-semibold">User Email:</span> {p.userEmail}
+              </p>
+              <p>
+                <span className="font-semibold">Date:</span>{" "}
+                {new Date(p.date).toLocaleString()}
+              </p>
+              <p>
+                <span className="font-semibold">Status:</span>{" "}
+                <span
+                  className={`font-semibold ${
+                    p.status === "confirmed"
+                      ? "text-green-600"
+                      : p.status === "rejected"
+                      ? "text-red-600"
+                      : "text-yellow-600"
+                  }`}
+                >
+                  {p.status || "pending"}
+                </span>
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-2 sm:flex-row mt-auto pt-2">
+              <button
+                disabled={p.status === "confirmed"}
+                onClick={() => openConfirmModal(p)}
+                className="bg-green-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 hover:bg-green-700 transition"
+              >
+                Accept
+              </button>
+              <button
+                disabled={p.status === "rejected"}
+                onClick={() => handleReject(p._id)}
+                className="bg-red-600 text-white w-full sm:w-auto px-4 py-2 rounded disabled:opacity-50 hover:bg-red-700 transition"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Confirm Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded shadow-lg max-w-xs w-full">
+            <h2 className="text-lg font-bold mb-2">Confirm Medicines</h2>
+            <div>
+              <label>
+                <input
+                  type="radio"
+                  checked={allPresent}
+                  onChange={() => setAllPresent(true)}
+                />{" "}
+                All medicines present
+              </label>
+              <label className="block mt-2">
+                <input
+                  type="radio"
+                  checked={!allPresent}
+                  onChange={() => setAllPresent(false)}
+                />{" "}
+                Not all present, specify:
+              </label>
+            </div>
+
+            {!allPresent && (
+              <div className="flex flex-col space-y-2 mt-2">
+                {manualMedicines.map((val, idx) => (
+                  <div key={idx} className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={val}
+                      onChange={(e) =>
+                        handleMedicineInputChange(idx, e.target.value)
+                      }
+                      placeholder={`Medicine ${idx + 1}`}
+                      className="border rounded px-2 py-1 w-full"
+                    />
+                    {manualMedicines.length > 1 && (
+                      <button
+                        onClick={() => removeMedicineField(idx)}
+                        className="text-red-500"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={addMedicineField}
+                  className="text-teal-600 mt-1"
+                >
+                  + Add Medicine
+                </button>
+              </div>
+            )}
+
+            <div className="flex space-x-3 mt-4">
+              <button
+                onClick={handleConfirmMedicines}
+                className="bg-teal-600 text-white px-3 py-1 rounded"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={closeConfirmModal}
+                className="bg-gray-400 text-white px-3 py-1 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PharmacyAdmin;
+</file>
+
 <file path="frontend/src/screens/Suraksha.jsx">
 import React, { useState } from "react";
 
@@ -4851,6 +4435,592 @@ export default Suraksha;
     "concurrently": "^8.2.0"
   }
 }
+</file>
+
+<file path="backend/middleware/auth.js">
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const Pharmacist = require('../models/pharmacist');
+
+module.exports = async (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: 'No token' });
+
+  const token = auth.split(' ')[1];
+
+  
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    
+    if (payload.id || payload._id) {
+      const user = await User.findById(payload.id || payload._id);
+      if (!user) return res.status(401).json({ error: "Invalid token" });
+      req.user = user;
+    }
+    // ✅ USER TOKEN
+    if (payload._id && payload.role === "user") {
+      const user = await User.findById(payload._id);
+      if (!user) return res.status(401).json({ error: "User not found" });
+      req.user = user;
+    }
+
+    // ✅ PHARMACIST TOKEN
+    else if (payload._id && payload.role === "pharmacist") {
+      const pharmacist = await Pharmacist.findById(payload._id);
+      if (!pharmacist)
+        return res.status(401).json({ error: "Pharmacist not found" });
+      req.pharmacist = pharmacist;
+    }
+
+    else {
+      return res.status(401).json({ error: "Invalid token payload" });
+    }
+
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Auth failed" });
+  }
+};
+</file>
+
+<file path="backend/routes/prescriptions.js">
+const express = require("express");
+const multer = require("multer");
+const Prescription = require("../models/prescription");
+const auth = require("../middleware/auth");
+const mongoose = require("mongoose");
+
+const upload = multer({ storage: multer.memoryStorage() });
+const router = express.Router();
+
+const getBucket = () => {
+  return new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: "prescriptions",
+  });
+};
+
+
+/* =============================
+   📤 Upload Prescription (Image)
+   ============================= */
+router.post("/", auth, upload.single("file"), async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "User access only" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const bucket = new mongoose.mongo.GridFSBucket(
+      mongoose.connection.db,
+      { bucketName: "prescriptions" }
+    );
+
+    const { originalname, buffer, mimetype } = req.file;
+
+    const uploadStream = bucket.openUploadStream(originalname, {
+      contentType: mimetype,
+    });
+
+    uploadStream.end(buffer);
+
+    uploadStream.on("finish", async () => {
+      const newPrescription = new Prescription({
+        userId: req.user._id,
+        userName: req.user.name,
+        userEmail: req.user.email,
+        filename: originalname,
+        originalname,
+        type: "upload",
+        status: "pending",
+        date: new Date(),
+      });
+
+      await newPrescription.save();
+
+      res.json({ message: "Prescription uploaded successfully" });
+    });
+
+    uploadStream.on("error", (err) => {
+      console.error("GridFS error:", err);
+      res.status(500).json({ message: "GridFS upload failed" });
+    });
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+
+/* =============================
+   🧾 Get User Prescriptions
+   ============================= */
+router.get("/", auth, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "User access only" });
+    }
+
+    const prescriptions = await Prescription.find({
+      userId: req.user._id,
+    }).sort({ date: -1 });
+
+    res.json(prescriptions);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch prescriptions." });
+  }
+});
+
+// =============================
+// 🏥 Get all prescriptions (Pharmacist only)
+// =============================
+router.get("/all", auth, async (req, res) => {
+  if (!req.pharmacist) {
+    return res.status(403).json({ message: "Pharmacist access only" });
+  }
+
+  try {
+    const prescriptions = await Prescription.find().sort({ date: -1 });
+    res.json(prescriptions);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch prescriptions" });
+  }
+});
+
+
+/* =============================
+   🖼️ Serve Prescription Image
+   ============================= */
+router.get("/image/:filename", async (req, res) => {
+  if (!bucket) return res.status(500).send("GridFSBucket not initialized");
+
+  const downloadStream = bucket.openDownloadStreamByName(req.params.filename);
+
+  downloadStream.on("error", () => res.status(404).send("File not found"));
+
+  res.set("Content-Type", "image/jpeg");
+  downloadStream.pipe(res);
+});
+
+/* =============================
+   ✅ Confirm Prescription (Pharmacist)
+   ============================= */
+router.put("/:id/confirm", auth, async (req, res) => {
+  try {
+    // 🔒 Pharmacist only
+    if (!req.pharmacist) {
+      return res.status(403).json({ message: "Pharmacist access only" });
+    }
+
+    const { allPresent, medicines = [] } = req.body;
+
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) {
+      return res.status(404).json({ message: "Prescription not found." });
+    }
+
+    prescription.status = "confirmed";
+    prescription.confirmation = {
+      allPresent: Boolean(allPresent),
+      medicines: Array.isArray(medicines) ? medicines : [],
+    };
+
+    await prescription.save();
+
+    // 🔔 Socket notification (safe)
+    const io = req.app.get("io");
+    if (io && prescription.userEmail) {
+      io.to(prescription.userEmail).emit("prescriptionConfirmed", {
+        prescriptionId: prescription._id,
+        allPresent,
+        medicines,
+        message: allPresent
+          ? "All medicines available"
+          : medicines.length
+          ? `Available medicines: ${medicines.join(", ")}`
+          : "Some medicines are unavailable",
+      });
+    }
+
+    res.json({
+      message: "Prescription confirmed successfully",
+      confirmed: prescription.confirmation,
+    });
+  } catch (err) {
+    console.error("CONFIRM ERROR:", err);
+    res.status(500).json({ message: "Prescription confirmation failed" });
+  }
+});
+
+
+/* =============================
+   💊 Manual Medicine Request (NEW)
+   ============================= */
+router.post("/manual", auth, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(403).json({ message: "User access only" });
+    }
+
+    const { medicines } = req.body;
+
+    if (!medicines || medicines.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Please provide at least one medicine." });
+    }
+
+    const manualPrescription = new Prescription({
+      userId: req.user._id,
+      userEmail: req.user.email,
+      userName: req.user.name,
+      medicines,
+      type: "manual",
+      date: new Date(),
+      status: "pending",
+    });
+
+    await manualPrescription.save();
+
+    res.status(201).json({
+      message: "Manual medicine request submitted successfully!",
+    });
+  } catch (err) {
+    console.error("Manual prescription error:", err);
+    res
+      .status(500)
+      .json({ message: "Failed to submit manual medicine request." });
+  }
+});
+
+
+module.exports = router;
+</file>
+
+<file path="frontend/src/screens/Aushadhi.jsx">
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import useSocket from "../hooks/useSocket";
+
+const Aushadhi = () => {
+  const { user } = useAuth();
+  const token = localStorage.getItem("token");
+
+  const [prescription, setPrescription] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [selectedMedicines, setSelectedMedicines] = useState([]); // ✅ new state
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Setup real-time socket connection for user notifications
+  const socket = useSocket(user?.email);
+
+  // Fetch prescriptions on mount and whenever user changes
+  useEffect(() => {
+    if (!user || !user.token) return;
+    axios
+      .get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+        setPrescriptions(res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [user]);
+
+  useEffect(() => {
+    if (!socket?.current) return;
+
+    const currentSocket = socket.current;
+
+    currentSocket.on("prescriptionConfirmed", (data) => {
+      alert(data.message);
+      setPrescriptions((prev) =>
+        prev.map((p) =>
+          p._id === data.prescriptionId
+            ? {
+                ...p,
+                status: "confirmed",
+                confirmation: {
+                  allPresent: data.allPresent,
+                  medicines: data.medicines || [],
+                },
+              }
+            : p
+        )
+      );
+    });
+
+    return () => {
+      if (currentSocket) {
+        currentSocket.off("prescriptionConfirmed");
+      }
+    };
+  }, [socket, user]);
+
+  // Upload prescription file
+  const handleFileChange = (e) => {
+    setPrescription(e.target.files[0]);
+    setUploadStatus("");
+  };
+
+  const handleUpload = async () => {
+    if (!prescription) return alert("Please select a prescription.");
+    if (!user) return alert("User not logged in.");
+
+    const formData = new FormData();
+    formData.append("file", prescription);
+    formData.append("userName", user.name);
+    formData.append("userEmail", user.email);
+
+    try {
+      setIsUploading(true); //  disable button
+      setUploadStatus("Uploading...");
+
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`, //  important for prod
+          },
+        }
+      );
+
+      setUploadStatus("Uploaded successfully!");
+      setPrescription(null);
+    } catch (err) {
+      console.error(err);
+      setUploadStatus("Upload failed.");
+    } finally {
+      setIsUploading(false); // 🔓 enable button again
+    }
+  };
+
+  // Static medicines (for now)
+  const medicines = [
+    {
+      name: "Paracetamol",
+      dosage: "500mg",
+      steps: "Take 1 tablet every 6 hours after food",
+    },
+    {
+      name: "Amoxicillin",
+      dosage: "250mg",
+      steps: "Take 1 capsule every 8 hours for 5 days",
+    },
+    {
+      name: "Vitamin C",
+      dosage: "500mg",
+      steps: "Take 1 tablet daily after breakfast",
+    },
+    {
+      name: "Vitamin D",
+      dosage: "400mg",
+      steps: "Take 1 tablet every 8 hours if pain persists",
+    },
+    {
+      name: "Combiflame",
+      dosage: "400mg",
+      steps: "Take 1 tablet every 8 hours if pain persists",
+    },
+    {
+      name: "Ciplox eye drops",
+      dosage: "Apply 2 drops",
+      steps: "Apply 2 drops twice daily",
+    },
+  ];
+
+  const filteredMedicines = medicines.filter((medicine) =>
+    medicine.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // ✅ Handle selecting medicine
+  const toggleSelectMedicine = (medicineName) => {
+    setSelectedMedicines((prev) =>
+      prev.includes(medicineName)
+        ? prev.filter((m) => m !== medicineName)
+        : [...prev, medicineName]
+    );
+  };
+
+  // ✅ Handle submitting selected medicines
+  const handleManualSubmit = async () => {
+    if (selectedMedicines.length === 0) {
+      return alert("Please select at least one medicine.");
+    }
+
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/manual`,
+        {
+          medicines: selectedMedicines,
+          userEmail: user.email,
+          userName: user.name,
+        },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      console.log("🔑 Current user token:", user?.token);
+      alert("✅ Medicine request submitted successfully!");
+      setSelectedMedicines([]);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Failed to submit manual request.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-50 px-2 py-4 sm:px-6 md:px-10 lg:px-20 overflow-y-auto">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3 sm:gap-0">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 text-center flex-1 break-words">
+          Svasthya <span className="text-teal-600">Aushadhi</span>
+        </h1>
+
+        {/* Upload Section */}
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+          <label
+            htmlFor="prescription-upload"
+            className="cursor-pointer bg-white border border-gray-300 rounded px-4 py-2 shadow-sm hover:bg-gray-100"
+          >
+            {prescription ? prescription.name : "Select Prescription"}
+            <input
+              id="prescription-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+          <button
+            onClick={handleUpload}
+            disabled={!prescription || isUploading}
+            className={`bg-teal-500 text-white px-3 py-1 rounded 
+    ${isUploading ? "opacity-50 cursor-not-allowed" : "hover:bg-teal-600"}
+  `}
+          >
+            {isUploading ? "Uploading..." : "Upload"}
+          </button>
+        </div>
+      </div>
+
+      {/* Upload Status */}
+      {uploadStatus && (
+        <p
+          className={`text-center mb-4 font-semibold ${
+            uploadStatus.includes("success") ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {uploadStatus}
+        </p>
+      )}
+
+      {/* SEARCH BAR */}
+      <div className="mb-6 max-w-lg mx-auto">
+        <input
+          type="text"
+          aria-label="Search medicine"
+          placeholder="Search medicine..."
+          className="w-full p-3 rounded-xl border border-gray-300 shadow-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* MEDICINE LIST */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {filteredMedicines.length > 0 ? (
+          filteredMedicines.map((medicine, index) => {
+            const selected = selectedMedicines.includes(medicine.name);
+            return (
+              <div
+                key={index}
+                onClick={() => toggleSelectMedicine(medicine.name)}
+                className={`cursor-pointer bg-white shadow-md rounded-xl p-4 sm:p-6 flex flex-col justify-between hover:shadow-2xl h-full transition-all ${
+                  selected ? "ring-4 ring-teal-500" : ""
+                }`}
+              >
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700">
+                  {medicine.name}
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 mt-2">
+                  {medicine.dosage}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-700 mt-3">
+                  {medicine.steps}
+                </p>
+              </div>
+            );
+          })
+        ) : (
+          <p className="col-span-full text-center text-gray-500">
+            No medicines found.
+          </p>
+        )}
+      </div>
+
+      {/* ✅ Submit Selected Medicines */}
+      {selectedMedicines.length > 0 && (
+        <div className="mt-6 text-center">
+          <p className="text-gray-700 mb-3">
+            Selected Medicines:{" "}
+            <span className="font-semibold text-teal-700">
+              {selectedMedicines.join(", ")}
+            </span>
+          </p>
+          <button
+            onClick={handleManualSubmit}
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Submit Selected Medicines
+          </button>
+        </div>
+      )}
+
+      {/* CONFIRMATION SECTION */}
+      <div className="mt-10 max-w-3xl mx-auto">
+        <h2 className="text-xl font-semibold mb-3">
+          Prescription Confirmations
+        </h2>
+        {prescriptions.length === 0 && <p>No prescriptions found.</p>}
+        {prescriptions.map((p) =>
+          p.confirmation ? (
+            <div key={p._id} className="bg-green-100 p-4 rounded mb-4">
+              <p>
+                <strong>Status:</strong> Confirmed
+              </p>
+              <p>
+                <strong>All Medicines Present:</strong>{" "}
+                {p.confirmation.allPresent ? "Yes" : "No"}
+              </p>
+              {!p.confirmation.allPresent &&
+                p.confirmation.medicines.length > 0 && (
+                  <ul className="list-disc list-inside ml-4">
+                    {p.confirmation.medicines.map((m, idx) => (
+                      <li key={idx}>{m}</li>
+                    ))}
+                  </ul>
+                )}
+            </div>
+          ) : null
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Aushadhi;
 </file>
 
 </files>

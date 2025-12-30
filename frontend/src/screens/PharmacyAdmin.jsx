@@ -13,21 +13,27 @@ const PharmacyAdmin = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("pharmacistToken");
+
     if (!token) {
       navigate("/pharmacist-login");
       return;
     }
 
+    // ✅ Set auth header once
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    let isMounted = true; // prevents state updates after unmount
+
     const fetchPharmacistInfo = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`
         );
-        setPharmacistName(res.data.userId);
-      } catch {
+
+        if (isMounted) {
+          setPharmacistName(res.data.name || res.data.userId);
+        }
+      } catch (err) {
         localStorage.removeItem("pharmacistToken");
         navigate("/pharmacist-login");
       }
@@ -36,13 +42,13 @@ const PharmacyAdmin = () => {
     const fetchPrescriptions = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/all`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/all`
         );
-        setPrescriptions(res.data);
-      } catch {
+
+        if (isMounted) {
+          setPrescriptions(res.data);
+        }
+      } catch (err) {
         localStorage.removeItem("pharmacistToken");
         navigate("/pharmacist-login");
       }
@@ -50,6 +56,10 @@ const PharmacyAdmin = () => {
 
     fetchPharmacistInfo();
     fetchPrescriptions();
+
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   const openConfirmModal = (prescription) => {
@@ -123,35 +133,32 @@ const PharmacyAdmin = () => {
     }
   };
 
- const handleReject = async (id) => {
-  const token = localStorage.getItem("pharmacistToken");
+  const handleReject = async (id) => {
+    const token = localStorage.getItem("pharmacistToken");
 
-  const confirmReject = window.confirm(
-    "Request rejected.\nWhen the medicines become available, please respond to the request."
-  );
-
-  if (!confirmReject) return;
-
-  try {
-    await axios.put(
-      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
+    const confirmReject = window.confirm(
+      "Request rejected.\nWhen the medicines become available, please respond to the request."
     );
 
-    setPrescriptions((prev) =>
-      prev.map((p) =>
-        p._id === id ? { ...p, status: "rejected" } : p
-      )
-    );
-  } catch (error) {
-    // console.error(error);
-    // alert("Error rejecting prescription");
-  }
-};
+    if (!confirmReject) return;
 
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setPrescriptions((prev) =>
+        prev.map((p) => (p._id === id ? { ...p, status: "rejected" } : p))
+      );
+    } catch (error) {
+      // console.error(error);
+      // alert("Error rejecting prescription");
+    }
+  };
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gray-50 relative">
