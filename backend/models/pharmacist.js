@@ -1,20 +1,37 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-const pharmacistSchema = new mongoose.Schema({
-  userId: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
-});
+const pharmacistSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-pharmacistSchema.pre("save", async function(next) {
+// 🔐 Hash password before save
+pharmacistSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-pharmacistSchema.methods.comparePassword = function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+// 🔑 Compare password method
+pharmacistSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model("Pharmacist", pharmacistSchema);
+module.exports =
+  mongoose.models.Pharmacist ||
+  mongoose.model("Pharmacist", pharmacistSchema);

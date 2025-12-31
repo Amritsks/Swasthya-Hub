@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const Prescription = require('../models/prescription');
+
 const authMiddleware = require('../middleware/auth');
 
-// Get logged-in pharmacist info
-router.get("/me", authMiddleware, (req, res) => {
-  if (!req.pharmacist) {
-    return res.status(401).json({ message: "Not a pharmacist" });
-  }
-  res.json(req.pharmacist);
-});
+const Pharmacist = require("../models/pharmacist");
+const pharmacistAuth = require("../middleware/pharmacistAuth");
 
+// Get logged-in pharmacist info
+router.get("/me", pharmacistAuth, async (req, res) => {
+  const pharmacist = await Pharmacist.findById(req.pharmacist.id).select("-password");
+  res.json(pharmacist);
+});
 
 // Get prescriptions assigned to logged-in pharmacist
 router.get('/prescriptions', authMiddleware, async (req, res) => {
