@@ -12,7 +12,7 @@ const PharmacyAdmin = () => {
 
   const navigate = useNavigate();
 
-  /* ================= AUTH HEADER (SINGLE SOURCE) ================= */
+  /* ================= AUTH ================= */
   const getHeaders = () => {
     const token = localStorage.getItem("pharmacistToken");
     if (!token) {
@@ -22,7 +22,7 @@ const PharmacyAdmin = () => {
     return { Authorization: `Bearer ${token}` };
   };
 
-  /* ================= FETCH DATA ================= */
+  /* ================= FETCH ================= */
   useEffect(() => {
     fetchPharmacistInfo();
     fetchPrescriptions();
@@ -39,8 +39,7 @@ const PharmacyAdmin = () => {
         { headers }
       );
       setPharmacistName(res.data.name);
-    } catch (err) {
-      console.error("Pharmacist info error:", err);
+    } catch {
       navigate("/pharmacist-login");
     }
   };
@@ -56,13 +55,13 @@ const PharmacyAdmin = () => {
       );
       setPrescriptions(res.data);
     } catch (err) {
-      console.error("Prescription fetch error:", err);
+      console.error(err);
     }
   };
 
-  /* ================= MODAL HELPERS ================= */
-  const openConfirmModal = (prescription) => {
-    setSelectedPrescription(prescription);
+  /* ================= MODAL ================= */
+  const openConfirmModal = (p) => {
+    setSelectedPrescription(p);
     setShowConfirmModal(true);
     setAllPresent(true);
     setManualMedicines([""]);
@@ -74,9 +73,9 @@ const PharmacyAdmin = () => {
     setManualMedicines([""]);
   };
 
-  const handleMedicineInputChange = (index, value) => {
+  const handleMedicineInputChange = (i, v) => {
     const updated = [...manualMedicines];
-    updated[index] = value;
+    updated[i] = v;
     setManualMedicines(updated);
   };
 
@@ -84,42 +83,32 @@ const PharmacyAdmin = () => {
     setManualMedicines([...manualMedicines, ""]);
   };
 
-  const removeMedicineField = (index) => {
-    setManualMedicines(manualMedicines.filter((_, i) => i !== index));
-  };
-
   /* ================= CONFIRM ================= */
   const handleConfirmMedicines = async () => {
     if (!selectedPrescription) return;
-
     const headers = getHeaders();
     if (!headers) return;
 
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${selectedPrescription._id}/confirm`,
-        {
-          allPresent,
-          medicines: allPresent
-            ? []
-            : manualMedicines.filter((m) => m.trim() !== ""),
-        },
-        { headers }
-      );
+    await axios.put(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${selectedPrescription._id}/confirm`,
+      {
+        allPresent,
+        medicines: allPresent
+          ? []
+          : manualMedicines.filter((m) => m.trim()),
+      },
+      { headers }
+    );
 
-      setPrescriptions((prev) =>
-        prev.map((p) =>
-          p._id === selectedPrescription._id
-            ? { ...p, status: "confirmed" }
-            : p
-        )
-      );
+    setPrescriptions((prev) =>
+      prev.map((p) =>
+        p._id === selectedPrescription._id
+          ? { ...p, status: "confirmed" }
+          : p
+      )
+    );
 
-      closeConfirmModal();
-    } catch (err) {
-      console.error("Confirm error:", err);
-      alert("Error confirming prescription");
-    }
+    closeConfirmModal();
   };
 
   /* ================= REJECT ================= */
@@ -127,44 +116,64 @@ const PharmacyAdmin = () => {
     const headers = getHeaders();
     if (!headers) return;
 
-    const ok = window.confirm(
-      "Request rejected.\nYou can respond again when medicines are available."
+    await axios.put(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
+      {},
+      { headers }
     );
-    if (!ok) return;
 
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
-        {},
-        { headers }
-      );
-
-      setPrescriptions((prev) =>
-        prev.map((p) =>
-          p._id === id ? { ...p, status: "rejected" } : p
-        )
-      );
-    } catch (err) {
-      console.error("Reject error:", err);
-      alert("Error rejecting prescription");
-    }
+    setPrescriptions((prev) =>
+      prev.map((p) =>
+        p._id === id ? { ...p, status: "rejected" } : p
+      )
+    );
   };
 
   /* ================= UI ================= */
   return (
     <div className="min-h-screen p-4 bg-gray-50">
-      <h1 className="text-3xl font-bold mb-6 text-center">
+      <h1 className="text-3xl font-bold text-center mb-6">
         Welcome, {pharmacistName}
       </h1>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {prescriptions.map((p) => (
-          <div key={p._id} className="bg-white p-4 rounded-xl shadow">
-            <p className="text-xs mb-2">
-              {p.type === "manual" ? "Manual Request" : "Uploaded Prescription"}
-            </p>
+          <div key={p._id} className="bg-white p-4 rounded shadow">
+            <span className="text-xs text-gray-500">
+              {p.type === "manual"
+                ? "Manual Request"
+                : "Uploaded Prescription"}
+            </span>
 
-            <p className="text-sm">
+            {/* 👁️ VIEW PRESCRIPTION (RESTORED) */}
+            {p.type === "upload" && p.filename && (
+              <p className="mt-2">
+                <a
+                  href={`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/image/${p.filename}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 underline text-sm"
+                >
+                  View Prescription
+                </a>
+              </p>
+            )}
+
+            {/* 💊 MANUAL MEDICINES */}
+            {p.type === "manual" && (
+              <>
+                <p className="font-semibold mt-2 text-sm">
+                  Medicines:
+                </p>
+                <ul className="list-disc ml-4 text-sm">
+                  {p.medicines?.map((m, i) => (
+                    <li key={i}>{m}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            <p className="text-sm mt-2">
               <b>User:</b> {p.userEmail}
             </p>
 
@@ -185,15 +194,15 @@ const PharmacyAdmin = () => {
 
             <div className="flex gap-2 mt-4">
               <button
-                disabled={p.status === "confirmed"}
                 onClick={() => openConfirmModal(p)}
+                disabled={p.status === "confirmed"}
                 className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50"
               >
                 Accept
               </button>
               <button
-                disabled={p.status === "rejected"}
                 onClick={() => handleReject(p._id)}
+                disabled={p.status === "rejected"}
                 className="bg-red-600 text-white px-3 py-1 rounded disabled:opacity-50"
               >
                 Reject
@@ -203,13 +212,13 @@ const PharmacyAdmin = () => {
         ))}
       </div>
 
-      {/* ================= MODAL ================= */}
+      {/* ================= CONFIRM MODAL ================= */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
           <div className="bg-white p-4 rounded w-80">
             <h2 className="font-bold mb-2">Confirm Medicines</h2>
 
-            <label className="block">
+            <label>
               <input
                 type="radio"
                 checked={allPresent}
@@ -236,8 +245,8 @@ const PharmacyAdmin = () => {
                     onChange={(e) =>
                       handleMedicineInputChange(i, e.target.value)
                     }
-                    placeholder={`Medicine ${i + 1}`}
                     className="border w-full mb-1 px-2 py-1"
+                    placeholder={`Medicine ${i + 1}`}
                   />
                 ))}
                 <button
