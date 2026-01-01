@@ -110,31 +110,6 @@ package.json
 <files>
 This section contains the contents of the repository's files.
 
-<file path="backend/middleware/pharmacistAuth.js">
-const jwt = require("jsonwebtoken");
-const Pharmacist = require("../models/pharmacist");
-
-module.exports = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ message: "No token" });
-
-  try {
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    const pharmacist = await Pharmacist.findById(decoded.id);
-    if (!pharmacist) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    req.pharmacist = pharmacist;
-    next();
-  } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
-  }
-};
-</file>
-
 <file path=".gitignore">
 # ENV FILES
 .env
@@ -199,37 +174,27 @@ Thumbs.db
 </html>
 </file>
 
-<file path="backend/middleware/adminAuth.js">
+<file path="backend/middleware/pharmacistAuth.js">
 const jwt = require("jsonwebtoken");
+const Pharmacist = require("../models/pharmacist");
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token" });
-  }
-
-  if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Invalid token format" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ message: "No token" });
-  }
+  if (!authHeader) return res.status(401).json({ message: "No token" });
 
   try {
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
+    const pharmacist = await Pharmacist.findById(decoded.id);
+    if (!pharmacist) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    req.admin = decoded;
+    req.pharmacist = pharmacist;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    res.status(401).json({ message: "Invalid token" });
   }
 };
 </file>
@@ -329,51 +294,6 @@ const donationSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Donation', donationSchema);
-</file>
-
-<file path="backend/models/pharmacist.js">
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-
-const pharmacistSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    userId: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-  },
-  { timestamps: true }
-);
-
-// 🔐 Hash password before save
-pharmacistSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-
-// 🔑 Compare password method
-pharmacistSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-module.exports =
-  mongoose.models.Pharmacist ||
-  mongoose.model("Pharmacist", pharmacistSchema);
 </file>
 
 <file path="backend/models/User.js">
@@ -539,73 +459,6 @@ router.post("/login", async (req, res) => {
     res.json({ token });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/adminPanel.js">
-console.log("✅ adminPanelRoutes loaded");
-
-const express = require("express");
-const User = require("../models/User");
-const BloodRequest = require("../models/BloodRequest");
-const Donation = require("../models/Donation");
-const Pharmacist = require("../models/pharmacist"); // ✅ FIXED
-const adminAuth = require("../middleware/adminAuth");
-
-const router = express.Router();
-
-// ================= USERS =================
-router.get("/users", adminAuth, async (req, res) => {
-  const users = await User.find().select("-password");
-  res.json(users);
-});
-
-// ================= REQUESTS =================
-router.get("/requests", adminAuth, async (req, res) => {
-  const requests = await BloodRequest.find();
-  res.json(requests);
-});
-
-// ================= DONATIONS =================
-router.get("/donations", adminAuth, async (req, res) => {
-  const donations = await Donation.find().populate("request");
-  res.json(donations);
-});
-
-// ================= PHARMACISTS (GET) =================
-router.get("/pharmacists", adminAuth, async (req, res) => {
-  const pharmacists = await Pharmacist.find().select("-password");
-  res.json(pharmacists);
-});
-
-// ================= PHARMACISTS (CREATE) =================
-router.post("/pharmacist", adminAuth, async (req, res) => {
-  try {
-    const { name, email, password, userId } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ message: "userId required" });
-    }
-
-    const exists = await Pharmacist.findOne({ userId });
-    if (exists) {
-      return res.status(400).json({ message: "Pharmacist already exists" });
-    }
-
-    const pharmacist = new Pharmacist({
-      name,
-      email,
-      userId,
-      password,
-    });
-
-    await pharmacist.save();
-    res.status(201).json(pharmacist);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
 });
 
@@ -969,47 +822,6 @@ export default defineConfig([
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-</file>
-
-<file path="frontend/package.json">
-{
-  "name": "swasthyahub",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "axios": "^1.12.2",
-    "dotenv": "^17.2.3",
-    "lucide-react": "^0.544.0",
-    "react": "^18.3.1",
-    "react-confetti": "^6.4.0",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^7.9.1",
-    "socket.io-client": "^4.8.1"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.33.0",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
-    "@vitejs/plugin-react": "^5.0.0",
-    "autoprefixer": "^10.4.21",
-    "baseline-browser-mapping": "^2.9.11",
-    "eslint": "^9.33.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
-    "postcss": "^8.5.6",
-    "repomix": "^1.5.0",
-    "tailwindcss": "^3.4.17",
-    "vite": "^7.1.2"
-  }
-}
 </file>
 
 <file path="frontend/postcss.config.cjs">
@@ -1826,310 +1638,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </AuthProvider>
   </React.StrictMode>
 );
-</file>
-
-<file path="frontend/src/screens/AdminDashboard.jsx">
-import { useEffect, useState } from "react";
-import axios from "axios";
-
-export default function AdminDashboard() {
-  const [users, setUsers] = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [pharmacists, setPharmacists] = useState([]);
-
-  const [newAdmin, setNewAdmin] = useState({ email: "", password: "" });
-  const [newPharmacist, setNewPharmacist] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
-  const fetchAll = async () => {
-    const token = localStorage.getItem("adminToken");
-    if (!token) {
-      window.location.href = "/admin/login";
-      return;
-    }
-
-    const headers = { Authorization: `Bearer ${token}` };
-
-    try {
-      const [u, r, p] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/users`, {
-          headers,
-        }),
-        axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/requests`,
-          { headers }
-        ),
-        axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists`,
-          { headers }
-        ),
-      ]);
-
-      setUsers(u.data);
-      setRequests(r.data);
-      setPharmacists(p.data);
-    } catch (err) {
-      console.error(err);
-      localStorage.removeItem("adminToken");
-      window.location.href = "/admin/login";
-    }
-  };
-
-  // 🔐 Create Admin
-  const createAdmin = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/admin/register`,
-        newAdmin,
-        { headers }
-      );
-      alert("Admin created");
-      setNewAdmin({ email: "", password: "" });
-    } catch {
-      alert("Failed to create admin");
-    }
-  };
-
-  // 💊 Create Pharmacist
-  const createPharmacist = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem("adminToken");
-
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacist`,
-        newPharmacist,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      alert("Pharmacist created");
-      setNewPharmacist({ name: "", email: "", password: "" });
-      fetchAll();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to create pharmacist");
-    }
-  };
-
-  return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
-
-      {/* 📊 Summary */}
-      <div className="grid grid-cols-3 gap-6 mb-10">
-        <StatCard title="Users" count={users.length} />
-        <StatCard title="Blood Requests" count={requests.length} />
-        <StatCard title="Pharmacists" count={pharmacists.length} />
-      </div>
-
-      {/* ➕ Create Section */}
-      <div className="grid grid-cols-2 gap-8 mb-12">
-        <FormCard title="Create Admin" onSubmit={createAdmin}>
-          <Input
-            placeholder="Email"
-            value={newAdmin.email}
-            onChange={(e) =>
-              setNewAdmin({ ...newAdmin, email: e.target.value })
-            }
-          />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={newAdmin.password}
-            onChange={(e) =>
-              setNewAdmin({ ...newAdmin, password: e.target.value })
-            }
-          />
-        </FormCard>
-
-        <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
-          <Input
-            placeholder="Name"
-            value={newPharmacist.name}
-            onChange={(e) =>
-              setNewPharmacist({ ...newPharmacist, name: e.target.value })
-            }
-          />
-          <Input
-            placeholder="Email"
-            value={newPharmacist.email}
-            onChange={(e) =>
-              setNewPharmacist({ ...newPharmacist, email: e.target.value })
-            }
-          />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={newPharmacist.password}
-            onChange={(e) =>
-              setNewPharmacist({ ...newPharmacist, password: e.target.value })
-            }
-          />
-        </FormCard>
-      </div>
-
-      {/* 📋 Tables */}
-      <Table title="Registered Users" headers={["Name", "Email"]}>
-        {users.map((u) => (
-          <tr key={u._id}>
-            <td>{u.name}</td>
-            <td>{u.email}</td>
-          </tr>
-        ))}
-      </Table>
-
-      <Table title="Blood Requests" headers={["Blood Group", "Status"]}>
-        {requests.map((r) => (
-          <tr key={r._id}>
-            <td>{r.group}</td>
-            <td>{r.status}</td>
-          </tr>
-        ))}
-      </Table>
-
-      <Table title="Pharmacists" headers={["Name", "Email"]}>
-        {pharmacists.map((p) => (
-          <tr key={p._id}>
-            <td className="p-2">{p.name}</td>
-            <td className="p-2">{p.email}</td>
-          </tr>
-        ))}
-      </Table>
-    </div>
-  );
-}
-
-/* ------------------ UI Components ------------------ */
-
-const StatCard = ({ title, count }) => (
-  <div className="bg-white p-6 rounded-xl shadow">
-    <h3 className="text-gray-500">{title}</h3>
-    <p className="text-3xl font-bold">{count}</p>
-  </div>
-);
-
-const FormCard = ({ title, children, onSubmit }) => (
-  <form
-    onSubmit={onSubmit}
-    className="bg-white p-6 rounded-xl shadow space-y-4"
-  >
-    <h2 className="text-xl font-semibold">{title}</h2>
-    {children}
-    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-      Create
-    </button>
-  </form>
-);
-
-const Input = ({ ...props }) => (
-  <input {...props} className="border w-full p-2 rounded" required />
-);
-
-const Table = ({ title, headers, children }) => (
-  <div className="bg-white rounded-xl shadow mb-10">
-    <h2 className="text-xl font-semibold p-4">{title}</h2>
-    <table className="w-full border-t">
-      <thead className="bg-gray-200">
-        <tr>
-          {headers.map((h) => (
-            <th key={h} className="text-left p-3">
-              {h}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y">{children}</tbody>
-    </table>
-  </div>
-);
-</file>
-
-<file path="frontend/src/screens/AdminLogin.jsx">
-import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-
-export default function AdminLogin() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/admin/login`,
-        { email, password },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      // ✅ Validate response
-      if (res.data?.token) {
-        localStorage.setItem("adminToken", res.data.token);
-
-        // ✅ Navigate ONLY after token is saved
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        alert("Login failed: token not received");
-      }
-
-    } catch (err) {
-      console.error("Admin login error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Invalid credentials");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex h-screen justify-center items-center bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-8 rounded-2xl shadow-md w-96"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
-
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="border w-full p-2 mb-4 rounded"
-          required
-        />
-
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="border w-full p-2 mb-4 rounded"
-          required
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
-    </div>
-  );
-}
 </file>
 
 <file path="frontend/src/screens/AI.jsx">
@@ -3231,6 +2739,41 @@ const connectDB = async () => {
 module.exports = connectDB;
 </file>
 
+<file path="backend/middleware/adminAuth.js">
+const jwt = require("jsonwebtoken");
+
+module.exports = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token" });
+  }
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Invalid token format" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "No token" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    req.admin = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
+</file>
+
 <file path="backend/migrateAddAchievements.js">
 // migrateAddAchievements.js
 const mongoose = require("mongoose");
@@ -3270,6 +2813,46 @@ const migrateAchievements = async () => {
 };
 
 migrateAchievements();
+</file>
+
+<file path="backend/models/pharmacist.js">
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const pharmacistSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+// 🔐 Hash password before save
+pharmacistSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+// 🔑 Compare password method
+pharmacistSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+module.exports =
+  mongoose.models.Pharmacist ||
+  mongoose.model("Pharmacist", pharmacistSchema);
 </file>
 
 <file path="backend/models/prescription.js">
@@ -3318,6 +2901,81 @@ const prescriptionSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("Prescription", prescriptionSchema);
+</file>
+
+<file path="backend/routes/adminPanel.js">
+console.log("✅ adminPanelRoutes loaded");
+
+const express = require("express");
+const User = require("../models/User");
+const BloodRequest = require("../models/BloodRequest");
+const Donation = require("../models/Donation");
+const Pharmacist = require("../models/pharmacist"); // ✅ FIXED
+const adminAuth = require("../middleware/adminAuth");
+
+const router = express.Router();
+
+// ================= USERS =================
+router.get("/users", adminAuth, async (req, res) => {
+  const users = await User.find().select("-password");
+  res.json(users);
+});
+
+// ================= REQUESTS =================
+router.get("/requests", adminAuth, async (req, res) => {
+  const requests = await BloodRequest.find();
+  res.json(requests);
+});
+
+// ================= DONATIONS =================
+router.get("/donations", adminAuth, async (req, res) => {
+  const donations = await Donation.find().populate("request");
+  res.json(donations);
+});
+
+// ================= PHARMACISTS (GET) =================
+router.get("/pharmacists", adminAuth, async (req, res) => {
+  const pharmacists = await Pharmacist.find().select("-password");
+  res.json(pharmacists);
+});
+
+// ================= PHARMACISTS (CREATE) =================
+router.post("/pharmacist", adminAuth, async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // ✅ Validation
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // ✅ Check by EMAIL (not userId)
+    const exists = await Pharmacist.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "Pharmacist already exists" });
+    }
+
+    // ✅ Create pharmacist
+    const pharmacist = new Pharmacist({
+      name,
+      email,
+      password, // assuming password hashing middleware already exists
+    });
+
+    await pharmacist.save();
+
+    res.status(201).json({
+      message: "Pharmacist created successfully",
+      pharmacist,
+    });
+  } catch (err) {
+    console.error("Create pharmacist error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+module.exports = router;
 </file>
 
 <file path="backend/routes/auth.js">
@@ -3427,127 +3085,6 @@ router.post("/login", async (req, res) => {
 });
 
 module.exports = router;
-</file>
-
-<file path="backend/routes/pharmacistAuth.js">
-console.log("✅ Pharmacist auth routes loaded");
-
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const Pharmacist = require("../models/pharmacist");
-
-const router = express.Router();
-
-router.post("/login", async (req, res) => {
-  const { userId, password } = req.body;
-
-  const pharmacist = await Pharmacist.findOne({ userId });
-  if (!pharmacist) {
-    return res.status(401).json({ message: "Invalid credentials" });
-  }
-
-  const isMatch = await pharmacist.comparePassword(password);
-  if (!isMatch) {
-    return res.status(401).json({ message: "Invalid credentials" });
-  }
-
-const token = jwt.sign(
-  { id: pharmacist._id },
-  process.env.JWT_SECRET,
-  { expiresIn: "7d" }
-);
-
-res.json({
-  token,
-  pharmacist: {
-    id: pharmacist._id,
-    name: pharmacist.name,
-    email: pharmacist.email,
-  },
-});
-
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/routes/pharmacistDashboard.js">
-const express = require('express');
-const router = express.Router();
-const Prescription = require('../models/prescription');
-
-const authMiddleware = require('../middleware/auth');
-
-const Pharmacist = require("../models/pharmacist");
-const pharmacistAuth = require("../middleware/pharmacistAuth");
-
-// Get logged-in pharmacist info
-router.get("/me", pharmacistAuth, async (req, res) => {
-  const pharmacist = await Pharmacist.findById(req.pharmacist.id).select("-password");
-  res.json(pharmacist);
-});
-
-// Get prescriptions assigned to logged-in pharmacist
-router.get('/prescriptions', authMiddleware, async (req, res) => {
-  try {
-    const prescriptions = await Prescription.find({ pharmacistUserId: req.pharmacist.userId });
-    res.json(prescriptions);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Accept a prescription
-router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
-
-    prescription.status = 'accepted';
-    await prescription.save();
-    res.json({ message: 'Prescription accepted' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Reject a prescription
-router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
-  try {
-    const prescription = await Prescription.findById(req.params.id);
-    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
-
-    prescription.status = 'rejected';
-    await prescription.save();
-    res.json({ message: 'Prescription rejected' });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-module.exports = router;
-</file>
-
-<file path="backend/scripts/createadmin.js">
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const Admin = require("../models/Admin");
-
-mongoose.connect(`${process.env.MONGO_URI}/swasthya`)
-  .then(async () => {
-    const hashedPassword = await bcrypt.hash("Admin@1234", 10);
-
-    const admin = new Admin({
-      email: "admin1@gmail.com",
-      password: hashedPassword
-    });
-
-    await admin.save();
-    console.log("✅ Admin created successfully!");
-    mongoose.disconnect();
-  })
-  .catch(err => console.error("❌ Error:", err));
 </file>
 
 <file path="backend/scripts/createPharmacists.js">
@@ -3725,6 +3262,47 @@ app.use((err, req, res, next) => {
 // ==========================
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+</file>
+
+<file path="frontend/package.json">
+{
+  "name": "swasthyahub",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
+    "lucide-react": "^0.544.0",
+    "react": "^18.3.1",
+    "react-confetti": "^6.4.0",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.9.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.21",
+    "baseline-browser-mapping": "^2.9.11",
+    "eslint": "^9.33.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "postcss": "^8.5.6",
+    "repomix": "^1.5.0",
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.1.2"
+  }
+}
 </file>
 
 <file path="frontend/src/App.jsx">
@@ -3984,6 +3562,85 @@ export default Navbar;
 } */
 </file>
 
+<file path="frontend/src/screens/AdminLogin.jsx">
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+export default function AdminLogin() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin/login`,
+        { email, password },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      // ✅ Validate response
+      if (res.data?.token) {
+        localStorage.setItem("adminToken", res.data.token);
+
+        // ✅ Navigate ONLY after token is saved
+        navigate("/admin/dashboard", { replace: true });
+      } else {
+        alert("Login failed: token not received");
+      }
+
+    } catch (err) {
+      console.error("Admin login error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex h-screen justify-center items-center bg-gray-100">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-8 rounded-2xl shadow-md w-96"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className="border w-full p-2 mb-4 rounded"
+          required
+        />
+
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          className="border w-full p-2 mb-4 rounded"
+          required
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
+      </form>
+    </div>
+  );
+}
+</file>
+
 <file path="frontend/src/screens/Login.jsx">
 import React, { useState } from "react";
 import axios from "axios";
@@ -4207,72 +3864,6 @@ const Login = () => {
 export default Login;
 </file>
 
-<file path="frontend/src/screens/PharmacistLogin.jsx">
-import React, { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-
-const PharmacistLogin = () => {
-  const [email, setEmail] = useState("");     // ✅ email
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-
-  const handleLogin = async () => {
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist-auth/login`,
-        { email, password }                    // ✅ send email
-      );
-
-      // clear other auth (optional but fine)
-      localStorage.removeItem("user");
-      localStorage.removeItem("userToken");
-
-      // save pharmacist token
-      localStorage.setItem("pharmacistToken", res.data.token);
-
-      navigate("/pharmacy-admin");
-    } catch (err) {
-      setError("Login failed. Check email or password.");
-    }
-  };
-
-  return (
-    <div className="max-w-md mx-auto mt-20 p-6 border rounded shadow">
-      <h2 className="text-xl mb-4 font-semibold">Pharmacist Login</h2>
-
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full p-2 mb-3 border rounded"
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full p-2 mb-3 border rounded"
-      />
-
-      <button
-        onClick={handleLogin}
-        className="w-full bg-teal-600 text-white py-2 rounded"
-      >
-        Login
-      </button>
-
-      {error && <p className="text-red-600 mt-2">{error}</p>}
-    </div>
-  );
-};
-
-export default PharmacistLogin;
-</file>
-
 <file path="frontend/src/screens/Suraksha.jsx">
 import React, { useState } from "react";
 
@@ -4448,6 +4039,488 @@ export default Suraksha;
     "concurrently": "^8.2.0"
   }
 }
+</file>
+
+<file path="backend/routes/pharmacistAuth.js">
+console.log("✅ Pharmacist auth routes loaded");
+
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const Pharmacist = require("../models/pharmacist");
+
+const router = express.Router();
+
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password required" });
+    }
+
+    // 🔍 find by EMAIL (NOT userId)
+    const pharmacist = await Pharmacist.findOne({ email });
+    if (!pharmacist) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // 🔑 password check (IMPORTANT)
+    const isMatch = await pharmacist.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // 🎟️ JWT token
+    const token = jwt.sign(
+      {
+        id: pharmacist._id,
+        role: "pharmacist",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({
+      token,
+      pharmacist: {
+        id: pharmacist._id,
+        name: pharmacist.name,
+        email: pharmacist.email,
+      },
+    });
+  } catch (err) {
+    console.error("Pharmacist login error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+module.exports = router;
+</file>
+
+<file path="backend/routes/pharmacistDashboard.js">
+const express = require('express');
+const router = express.Router();
+const Prescription = require('../models/prescription');
+
+const authMiddleware = require('../middleware/auth');
+
+const Pharmacist = require("../models/pharmacist");
+const pharmacistAuth = require("../middleware/pharmacistAuth");
+
+// Get logged-in pharmacist info
+router.get("/me", pharmacistAuth, async (req, res) => {
+  const pharmacist = await Pharmacist.findById(req.pharmacist.id).select("-password");
+  res.json(pharmacist);
+});
+
+// Get prescriptions assigned to logged-in pharmacist
+router.get('/prescriptions', authMiddleware, async (req, res) => {
+  try {
+    const prescriptions = await Prescription.find({ pharmacistUserId: req.pharmacist.userId });
+    res.json(prescriptions);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Accept a prescription
+router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
+
+    prescription.status = 'accepted';
+    await prescription.save();
+    res.json({ message: 'Prescription accepted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Reject a prescription
+router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
+  try {
+    const prescription = await Prescription.findById(req.params.id);
+    if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
+
+    prescription.status = 'rejected';
+    await prescription.save();
+    res.json({ message: 'Prescription rejected' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = router;
+</file>
+
+<file path="backend/scripts/createadmin.js">
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const Admin = require("../models/Admin");
+
+mongoose.connect(`${process.env.MONGO_URI}/swasthya`)
+  .then(async () => {
+    const hashedPassword = await bcrypt.hash("Admin@1234", 10);
+
+    const admin = new Admin({
+      email: "admin1@gmail.com",
+      password: hashedPassword
+    });
+
+    await admin.save();
+    console.log("✅ Admin created successfully!");
+    mongoose.disconnect();
+  })
+  .catch(err => console.error("❌ Error:", err));
+</file>
+
+<file path="frontend/src/screens/AdminDashboard.jsx">
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+export default function AdminDashboard() {
+  const [users, setUsers] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [pharmacists, setPharmacists] = useState([]);
+
+  const [newAdmin, setNewAdmin] = useState({ email: "", password: "" });
+  const [newPharmacist, setNewPharmacist] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const fetchAll = async () => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      window.location.href = "/admin/login";
+      return;
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    try {
+      const [u, r, p] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/users`, {
+          headers,
+        }),
+        axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/requests`,
+          { headers }
+        ),
+        axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists`,
+          { headers }
+        ),
+      ]);
+
+      setUsers(u.data);
+      setRequests(r.data);
+      setPharmacists(p.data);
+    } catch (err) {
+      console.error(err);
+      localStorage.removeItem("adminToken");
+      window.location.href = "/admin/login";
+    }
+  };
+
+ 
+  // 🔐 Create Admin (NO TOKEN REQUIRED)
+  const createAdmin = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin/register`,
+        {
+          email: newAdmin.email,
+          password: newAdmin.password,
+        }
+      );
+
+      alert("Admin created");
+      setNewAdmin({ email: "", password: "" });
+    } catch (err) {
+      console.error("Create admin error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Failed to create admin");
+    }
+  };
+
+  // 💊 Create Pharmacist
+  const createPharmacist = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("adminToken");
+
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacist`,
+        newPharmacist,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      alert("Pharmacist created");
+      setNewPharmacist({ name: "", email: "", password: "" });
+      fetchAll();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create pharmacist");
+    }
+  };
+
+  return (
+  <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
+    <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">
+      Admin Dashboard
+    </h1>
+
+    {/* 📊 Summary */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
+      <StatCard title="Users" count={users.length} />
+      <StatCard title="Blood Requests" count={requests.length} />
+      <StatCard title="Pharmacists" count={pharmacists.length} />
+    </div>
+
+    {/* ➕ Create Section */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
+      <FormCard title="Create Admin" onSubmit={createAdmin}>
+        <Input
+          placeholder="Email"
+          value={newAdmin.email}
+          onChange={(e) =>
+            setNewAdmin({ ...newAdmin, email: e.target.value })
+          }
+        />
+        <Input
+          placeholder="Password"
+          type="password"
+          value={newAdmin.password}
+          onChange={(e) =>
+            setNewAdmin({ ...newAdmin, password: e.target.value })
+          }
+        />
+      </FormCard>
+
+      <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
+        <Input
+          placeholder="Name"
+          value={newPharmacist.name}
+          onChange={(e) =>
+            setNewPharmacist({ ...newPharmacist, name: e.target.value })
+          }
+        />
+        <Input
+          placeholder="Email"
+          value={newPharmacist.email}
+          onChange={(e) =>
+            setNewPharmacist({ ...newPharmacist, email: e.target.value })
+          }
+        />
+        <Input
+          placeholder="Password"
+          type="password"
+          value={newPharmacist.password}
+          onChange={(e) =>
+            setNewPharmacist({ ...newPharmacist, password: e.target.value })
+          }
+        />
+      </FormCard>
+    </div>
+
+    {/* 📋 Tables */}
+    <ResponsiveTable title="Registered Users" headers={["Name", "Email"]}>
+      {users.map((u) => (
+        <tr key={u._id}>
+          <td className="p-3">{u.name}</td>
+          <td className="p-3">{u.email}</td>
+        </tr>
+      ))}
+    </ResponsiveTable>
+
+    <ResponsiveTable title="Blood Requests" headers={["Blood Group", "Status"]}>
+      {requests.map((r) => (
+        <tr key={r._id}>
+          <td className="p-3">{r.group}</td>
+          <td className="p-3">{r.status}</td>
+        </tr>
+      ))}
+    </ResponsiveTable>
+
+    <ResponsiveTable title="Pharmacists" headers={["Name", "Email"]}>
+      {pharmacists.map((p) => (
+        <tr key={p._id}>
+          <td className="p-3">{p.name}</td>
+          <td className="p-3">{p.email}</td>
+        </tr>
+      ))}
+    </ResponsiveTable>
+  </div>
+  );
+}
+
+/* ------------------ UI Components ------------------ */
+const StatCard = ({ title, count }) => (
+  <div className="bg-white p-4 sm:p-6 rounded-xl shadow">
+    <h3 className="text-gray-500 text-sm sm:text-base">{title}</h3>
+    <p className="text-2xl sm:text-3xl font-bold">{count}</p>
+  </div>
+);
+
+const FormCard = ({ title, children, onSubmit }) => (
+  <form
+    onSubmit={onSubmit}
+    className="bg-white p-4 sm:p-6 rounded-xl shadow space-y-4"
+  >
+    <h2 className="text-lg sm:text-xl font-semibold">{title}</h2>
+    {children}
+    <button className="w-full sm:w-auto bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 transition">
+      Create
+    </button>
+  </form>
+);
+
+const Input = (props) => (
+  <input
+    {...props}
+    className="border w-full p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+    required
+  />
+);
+
+const ResponsiveTable = ({ title, headers, children }) => (
+  <div className="bg-white rounded-xl shadow mb-8 sm:mb-10">
+    <h2 className="text-lg sm:text-xl font-semibold p-4">{title}</h2>
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-t">
+        <thead className="bg-gray-200">
+          <tr>
+            {headers.map((h) => (
+              <th key={h} className="text-left p-3 text-sm sm:text-base">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y text-sm sm:text-base">
+          {children}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+</file>
+
+<file path="frontend/src/screens/PharmacistLogin.jsx">
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const PharmacistLogin = () => {
+  const [email, setEmail] = useState("");     // ✅ email
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async () => {
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist-auth/login`,
+        { email, password }                    // ✅ send email
+      );
+
+      // clear other auth (optional but fine)
+      localStorage.removeItem("user");
+      localStorage.removeItem("userToken");
+
+      // save pharmacist token
+      localStorage.setItem("pharmacistToken", res.data.token);
+
+      navigate("/pharmacy-admin");
+    } catch (err) {
+      setError("Login failed. Check email or password.");
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto mt-20 p-6 border rounded shadow">
+      <h2 className="text-xl mb-4 font-semibold">Pharmacist Login</h2>
+
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full p-2 mb-3 border rounded"
+      />
+
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="w-full p-2 mb-3 border rounded"
+      />
+
+      <button
+        onClick={handleLogin}
+        className="w-full bg-teal-600 text-white py-2 rounded"
+      >
+        Login
+      </button>
+
+      {error && <p className="text-red-600 mt-2">{error}</p>}
+    </div>
+  );
+};
+
+export default PharmacistLogin;
+</file>
+
+<file path="backend/middleware/auth.js">
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const Pharmacist = require("../models/pharmacist");
+
+module.exports = async (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: "No token" });
+
+  const token = auth.split(" ")[1];
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    // ✅ PHARMACIST FIRST
+    if (payload.role === "pharmacist") {
+      const pharmacist = await Pharmacist.findById(payload._id);
+      if (!pharmacist)
+        return res.status(401).json({ error: "Pharmacist not found" });
+
+      req.pharmacist = pharmacist;
+      return next();
+    }
+
+    // ✅ USER
+    if (payload.role === "user") {
+      const user = await User.findById(payload._id);
+      if (!user)
+        return res.status(401).json({ error: "User not found" });
+
+      req.user = user;
+      return next();
+    }
+
+    return res.status(401).json({ error: "Invalid token role" });
+  } catch (err) {
+    return res.status(401).json({ error: "Auth failed" });
+  }
+};
 </file>
 
 <file path="backend/routes/prescriptions.js">
@@ -4868,47 +4941,6 @@ const PharmacyAdmin = () => {
 };
 
 export default PharmacyAdmin;
-</file>
-
-<file path="backend/middleware/auth.js">
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const Pharmacist = require("../models/pharmacist");
-
-module.exports = async (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ error: "No token" });
-
-  const token = auth.split(" ")[1];
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-
-    // ✅ PHARMACIST FIRST
-    if (payload.role === "pharmacist") {
-      const pharmacist = await Pharmacist.findById(payload._id);
-      if (!pharmacist)
-        return res.status(401).json({ error: "Pharmacist not found" });
-
-      req.pharmacist = pharmacist;
-      return next();
-    }
-
-    // ✅ USER
-    if (payload.role === "user") {
-      const user = await User.findById(payload._id);
-      if (!user)
-        return res.status(401).json({ error: "User not found" });
-
-      req.user = user;
-      return next();
-    }
-
-    return res.status(401).json({ error: "Invalid token role" });
-  } catch (err) {
-    return res.status(401).json({ error: "Auth failed" });
-  }
-};
 </file>
 
 <file path="frontend/src/screens/Aushadhi.jsx">

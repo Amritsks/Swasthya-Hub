@@ -1,9 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Prescription = require('../models/prescription');
-
-const authMiddleware = require('../middleware/auth');
-
 const Pharmacist = require("../models/pharmacist");
 const pharmacistAuth = require("../middleware/pharmacistAuth");
 
@@ -14,7 +11,7 @@ router.get("/me", pharmacistAuth, async (req, res) => {
 });
 
 // Get prescriptions assigned to logged-in pharmacist
-router.get('/prescriptions', authMiddleware, async (req, res) => {
+router.get('/prescriptions', pharmacistAuth, async (req, res) => {
   try {
     const prescriptions = await Prescription.find({ pharmacistUserId: req.pharmacist.userId });
     res.json(prescriptions);
@@ -24,7 +21,7 @@ router.get('/prescriptions', authMiddleware, async (req, res) => {
 });
 
 // Accept a prescription
-router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
+router.put('/prescriptions/:id/accept', pharmacistAuth, async (req, res) => {
   try {
     const prescription = await Prescription.findById(req.params.id);
     if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
@@ -38,7 +35,7 @@ router.put('/prescriptions/:id/accept', authMiddleware, async (req, res) => {
 });
 
 // Reject a prescription
-router.put('/prescriptions/:id/reject', authMiddleware, async (req, res) => {
+router.put('/prescriptions/:id/reject', pharmacistAuth, async (req, res) => {
   try {
     const prescription = await Prescription.findById(req.params.id);
     if (!prescription) return res.status(404).json({ error: 'Prescription not found' });
