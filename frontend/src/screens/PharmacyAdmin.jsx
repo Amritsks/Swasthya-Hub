@@ -117,7 +117,7 @@ const PharmacyAdmin = () => {
     if (!headers) return;
 
     await axios.put(
-      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${id}/reject`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/prescriptions/${id}/reject`,
       {},
       { headers }
     );
