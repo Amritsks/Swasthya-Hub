@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const PharmacistLogin = () => {
-  const [email, setEmail] = useState("");     // ✅ email
+  const [email, setEmail] = useState(""); // ✅ email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ const PharmacistLogin = () => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist-auth/login`,
-        { email, password }                    // ✅ send email
+        { email, password } // ✅ send email
       );
 
       // clear other auth (optional but fine)
@@ -21,8 +21,9 @@ const PharmacistLogin = () => {
 
       // save pharmacist token
       localStorage.setItem("pharmacistToken", res.data.token);
-
-      navigate("/pharmacy-admin");
+      setTimeout(() => {
+        navigate("/pharmacy-admin");
+      }, 0);
     } catch (err) {
       setError("Login failed. Check email or password.");
     }

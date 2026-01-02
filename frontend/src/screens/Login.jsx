@@ -62,7 +62,7 @@ const Login = () => {
       if (isLogin) {
         // log the user in globally using AuthContext
         login(res.data.user, res.data.token);
-        navigate("/dashboard");
+        navigate("/userdashboard");
       } else {
         alert("Registration successful! Please log in now.");
         setIsLogin(true);

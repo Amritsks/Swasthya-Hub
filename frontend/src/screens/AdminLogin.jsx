@@ -24,11 +24,16 @@ export default function AdminLogin() {
         localStorage.setItem("adminToken", res.data.token);
 
         // ✅ Navigate ONLY after token is saved
-        navigate("/admin/dashboard", { replace: true });
+        setTimeout(
+          () => {
+            navigate("/admin/dashboard");
+          },
+          0,
+          { replace: true }
+        );
       } else {
         alert("Login failed: token not received");
       }
-
     } catch (err) {
       console.error("Admin login error:", err.response?.data || err.message);
       alert(err.response?.data?.message || "Invalid credentials");

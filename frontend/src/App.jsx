@@ -1,8 +1,14 @@
 import React from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Navbar from "./components/Navbar";
-// import Layout from "./layout/Layout";
+
 import Dashboard from "./screens/Dashboard";
+import UserDashboard from "./screens/UserDashboard";
 import Suraksha from "./screens/Suraksha";
 import Aushadhi from "./screens/Aushadhi";
 import Raksha from "./screens/Raksha";
@@ -13,32 +19,50 @@ import Healthassist from "./screens/AI";
 import Login from "./screens/Login";
 import PharmacyAdmin from "./screens/PharmacyAdmin";
 import PharmacistLogin from "./screens/PharmacistLogin";
-import { useAuth } from "./context/AuthContext";
-
-// ✅ New imports for Admin Panel
 import AdminLogin from "./screens/AdminLogin";
 import AdminDashboard from "./screens/AdminDashboard";
 
+import { useAuth } from "./context/AuthContext";
+
 const App = () => {
   const { user } = useAuth();
-  const isLoggedIn = !!user;
 
-  // ✅ Simple helper to check if admin token exists
+  const isLoggedIn = !!user;
   const isAdmin = !!localStorage.getItem("adminToken");
+  const isPharmacist = !!localStorage.getItem("pharmacistToken");
 
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-        {/* Show Navbar only for logged-in users, not admin */}
-        {isLoggedIn && <Navbar />}
+        {/* ✅ Navbar ALWAYS visible */}
+        <Navbar />
 
         <Routes>
-          {/* ---------- USER ROUTES ---------- */}
-          <Route path="/login" element={<Login />} />
+          {/* ---------- PUBLIC ---------- */}
           <Route
-            path="/dashboard"
-            element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" />}
-          />
+  path="/"
+  element={
+    isAdmin ? (
+      <Navigate to="/admin/dashboard" />
+    ) : isPharmacist ? (
+      <Navigate to="/pharmacy-admin" />
+    ) : isLoggedIn ? (
+      <Navigate to="/userdashboard" />
+    ) : (
+      <Dashboard />
+    )
+  }
+/>
+
+
+          <Route path="/login" element={<Login />} />
+
+          {/* ---------- USER ---------- */}
+          <Route
+  path="/userdashboard"
+  element={isLoggedIn ? <UserDashboard /> : <Navigate to="/login" />}
+/>
+
           <Route
             path="/profile"
             element={isLoggedIn ? <Profile /> : <Navigate to="/login" />}
@@ -68,22 +92,30 @@ const App = () => {
             element={isLoggedIn ? <Healthassist /> : <Navigate to="/login" />}
           />
 
-          {/* ---------- PHARMACY ROUTES ---------- */}
-          <Route path="/pharmacy-admin" element={<PharmacyAdmin />} />
+          {/* ---------- PHARMACIST ---------- */}
           <Route path="/pharmacist-login" element={<PharmacistLogin />} />
+          <Route
+            path="/pharmacy-admin"
+            element={
+              isPharmacist ? (
+                <PharmacyAdmin />
+              ) : (
+                <Navigate to="/pharmacist-login" />
+              )
+            }
+          />
 
-          {/* ---------- ADMIN PANEL ROUTES ---------- */}
+          {/* ---------- ADMIN ---------- */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin/dashboard"
-            element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin/login" />}
+            element={
+              isAdmin ? <AdminDashboard /> : <Navigate to="/admin/login" />
+            }
           />
 
           {/* ---------- FALLBACK ---------- */}
-          <Route
-            path="*"
-            element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} />}
-          />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
     </Router>
