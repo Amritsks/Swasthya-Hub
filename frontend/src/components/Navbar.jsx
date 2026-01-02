@@ -18,6 +18,58 @@ const Navbar = () => {
     navigate("/");
   };
 
+  // Common links based on role
+  const guestLinks = (
+    <Link to="/login" className="font-semibold block py-2">
+      Login
+    </Link>
+  );
+
+  const userLinks = (
+    <>
+      <Link to="/userdashboard" className="block py-2">
+        Dashboard
+      </Link>
+      <Link to="/profile" className="block py-2">
+        Profile
+      </Link>
+      <Link to="/aushadhi" className="block py-2">
+        Aushadhi
+      </Link>
+      <Link to="/suraksha" className="block py-2">
+        Suraksha
+      </Link>
+      <Link to="/raksha" className="block py-2">
+        Raksha
+      </Link>
+      <button onClick={handleLogout} className="block py-2 text-left">
+        Logout
+      </button>
+    </>
+  );
+
+  const pharmacistLinks = (
+    <>
+      <Link to="/pharmacy-admin" className="block py-2">
+        Pharmacy Dashboard
+      </Link>
+      <button onClick={handleLogout} className="block py-2 text-left">
+        Logout
+      </button>
+    </>
+  );
+
+  const adminLinks = (
+    <>
+      <Link to="/admin/dashboard" className="block py-2">
+        Admin Dashboard
+      </Link>
+      <button onClick={handleLogout} className="block py-2 text-left">
+        Logout
+      </button>
+    </>
+  );
+
   return (
     <nav className="bg-teal-200 p-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -25,48 +77,29 @@ const Navbar = () => {
           Svasthya Hub
         </Link>
 
+        {/* Desktop Menu */}
         <div className="hidden md:flex gap-6 items-center">
-          {/* 👤 GUEST */}
-          {!user && !isAdmin && !isPharmacist && (
-            <Link to="/login" className="font-semibold">
-              Login
-            </Link>
-          )}
-
-          {/* 👨‍⚕️ USER */}
-          {user && (
-            <>
-              <Link to="/userdashboard">Dashboard</Link>
-              <Link to="/profile">Profile</Link>
-              <Link to="/aushadhi">Aushadhi</Link>
-              <Link to="/suraksha">Suraksha</Link>
-              <Link to="/raksha">Raksha</Link>
-              <button onClick={handleLogout}>Logout</button>
-            </>
-          )}
-
-          {/* 🧪 PHARMACIST */}
-          {isPharmacist && (
-            <>
-              <Link to="/pharmacy-admin">Pharmacy Dashboard</Link>
-              <button onClick={handleLogout}>Logout</button>
-            </>
-          )}
-
-          {/* 🛡 ADMIN */}
-          {isAdmin && (
-            <>
-              <Link to="/admin/dashboard">Admin Dashboard</Link>
-              <button onClick={handleLogout}>Logout</button>
-            </>
-          )}
+          {!user && !isAdmin && !isPharmacist && guestLinks}
+          {user && userLinks}
+          {isPharmacist && pharmacistLinks}
+          {isAdmin && adminLinks}
         </div>
 
-        {/* Mobile Toggle */}
+        {/* Mobile Toggle Button */}
         <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
           {isOpen ? <X /> : <Menu />}
         </button>
       </div>
+
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden mt-2 px-4 bg-teal-100 rounded shadow-lg">
+          {!user && !isAdmin && !isPharmacist && guestLinks}
+          {user && userLinks}
+          {isPharmacist && pharmacistLinks}
+          {isAdmin && adminLinks}
+        </div>
+      )}
     </nav>
   );
 };
