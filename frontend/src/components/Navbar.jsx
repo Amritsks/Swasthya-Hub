@@ -15,7 +15,8 @@ const Navbar = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("pharmacistToken");
     logout?.();
-    navigate("/");
+
+    navigate("/", { replace: true }); // 🔥 IMPORTANT
   };
 
   // Common links based on role

@@ -1,10 +1,11 @@
 import React from "react";
 import {
-  HashRouter as Router,
+  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 
 import Dashboard from "./screens/Dashboard";

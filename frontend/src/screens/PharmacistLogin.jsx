@@ -22,7 +22,7 @@ const PharmacistLogin = () => {
       // save pharmacist token
       localStorage.setItem("pharmacistToken", res.data.token);
       setTimeout(() => {
-        navigate("/pharmacy-admin");
+        navigate("/pharmacy-admin", { replace: true });
       }, 0);
     } catch (err) {
       setError("Login failed. Check email or password.");

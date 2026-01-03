@@ -24,13 +24,9 @@ export default function AdminLogin() {
         localStorage.setItem("adminToken", res.data.token);
 
         // ✅ Navigate ONLY after token is saved
-        setTimeout(
-          () => {
-            navigate("/admin/dashboard");
-          },
-          0,
-          { replace: true }
-        );
+        setTimeout(() => {
+          navigate("/admin/dashboard", { replace: true });
+        }, 0);
       } else {
         alert("Login failed: token not received");
       }
