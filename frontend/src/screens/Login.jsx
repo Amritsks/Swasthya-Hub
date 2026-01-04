@@ -21,6 +21,7 @@ const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [selectedRole, setSelectedRole] = useState("user");
   const [showPassword, setShowPassword] = useState(true); // 👁️ FIXED
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -28,6 +29,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     if (!form.password || (!form.email && !form.phone)) {
       alert("Please provide email/phone and password");
@@ -74,6 +76,8 @@ const Login = () => {
     } catch (err) {
       console.error("Axios error:", err);
       alert(err.response?.data?.error || "Login/Register failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -183,8 +187,11 @@ const Login = () => {
                 </button>
               </div>
 
-              <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-                {isLogin ? "Login" : "Register"}
+              <button
+                disabled={loading}
+                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? "Logging in..." : isLogin ? "Login" : "Register"}
               </button>
             </form>
 
