@@ -22,7 +22,7 @@ const UserDashboard = ({ user }) => {
   const cards = [
     { name: "Aushadhi", route: "/aushadhi", color: "bg-teal-100", hover: "hover:shadow-lg hover:-translate-y-1" },
     { name: "Suraksha", route: "/suraksha", color: "bg-orange-200", hover: "hover:shadow-lg hover:-translate-y-1" },
-    { name: "Raksha", route: "/raksha", color: "bg-white", hover: "hover:shadow-lg hover:-translate-y-1" },
+    { name: "Raksha", route: "/raksha", color: "bg-gray-200", hover: "hover:shadow-lg hover:-translate-y-1" },
     // { name: "Doctor", route: "/doctor", color: "bg-lime-100", hover: "hover:shadow-lg hover:-translate-y-1" },
     // { name: "Lab Test", route: "/labtest", color: "bg-blue-200", hover: "hover:shadow-lg hover:-translate-y-1" },
     { name: "AI Health Assist", route: "/healthassist", color: "bg-green-200", hover: "hover:shadow-lg hover:-translate-y-1" },
