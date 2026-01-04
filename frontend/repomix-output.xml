@@ -74,6 +74,7 @@ src/screens/Suraksha.jsx
 src/screens/UserDashboard.jsx
 src/services/api.js
 tailwind.config.js
+vercel.json
 vite.config.js
 </directory_structure>
 
@@ -207,8 +208,15 @@ module.exports = {
 
 <file path="src/App.jsx">
 import React from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
 import Navbar from "./components/Navbar";
+
 import Dashboard from "./screens/Dashboard";
 import UserDashboard from "./screens/UserDashboard";
 import Suraksha from "./screens/Suraksha";
@@ -221,33 +229,50 @@ import Healthassist from "./screens/AI";
 import Login from "./screens/Login";
 import PharmacyAdmin from "./screens/PharmacyAdmin";
 import PharmacistLogin from "./screens/PharmacistLogin";
-import { useAuth } from "./context/AuthContext";
-
 import AdminLogin from "./screens/AdminLogin";
 import AdminDashboard from "./screens/AdminDashboard";
 
+import { useAuth } from "./context/AuthContext";
+
 const App = () => {
   const { user } = useAuth();
+
   const isLoggedIn = !!user;
   const isAdmin = !!localStorage.getItem("adminToken");
+  const isPharmacist = !!localStorage.getItem("pharmacistToken");
 
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-
-        {/* Show Navbar ONLY for non-admin routes */}
-        {!isAdmin && <Navbar isLoggedIn={isLoggedIn} />}
+        {/* ✅ Navbar ALWAYS visible */}
+        <Navbar />
 
         <Routes>
           {/* ---------- PUBLIC ---------- */}
-          <Route path="/" element={<Dashboard />} />
+          <Route
+  path="/"
+  element={
+    isAdmin ? (
+      <Navigate to="/admin/dashboard" />
+    ) : isPharmacist ? (
+      <Navigate to="/pharmacy-admin" />
+    ) : isLoggedIn ? (
+      <Navigate to="/userdashboard" />
+    ) : (
+      <Dashboard />
+    )
+  }
+/>
+
+
           <Route path="/login" element={<Login />} />
 
-          {/* ---------- USER PROTECTED ---------- */}
+          {/* ---------- USER ---------- */}
           <Route
-            path="/userdashboard"
-            element={isLoggedIn ? <UserDashboard /> : <Navigate to="/login" />}
-          />
+  path="/userdashboard"
+  element={isLoggedIn ? <UserDashboard /> : <Navigate to="/login" />}
+/>
+
           <Route
             path="/profile"
             element={isLoggedIn ? <Profile /> : <Navigate to="/login" />}
@@ -277,22 +302,30 @@ const App = () => {
             element={isLoggedIn ? <Healthassist /> : <Navigate to="/login" />}
           />
 
-          {/* ---------- PHARMACY ---------- */}
-          <Route path="/pharmacy-admin" element={<PharmacyAdmin />} />
+          {/* ---------- PHARMACIST ---------- */}
           <Route path="/pharmacist-login" element={<PharmacistLogin />} />
+          <Route
+            path="/pharmacy-admin"
+            element={
+              isPharmacist ? (
+                <PharmacyAdmin />
+              ) : (
+                <Navigate to="/pharmacist-login" />
+              )
+            }
+          />
 
           {/* ---------- ADMIN ---------- */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin/dashboard"
-            element={isAdmin ? <AdminDashboard /> : <Navigate to="/admin/login" />}
+            element={
+              isAdmin ? <AdminDashboard /> : <Navigate to="/admin/login" />
+            }
           />
 
           {/* ---------- FALLBACK ---------- */}
-          <Route
-            path="*"
-            element={<Navigate to={isLoggedIn ? "/userdashboard" : "/"} />}
-          />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
     </Router>
@@ -307,132 +340,107 @@ export default App;
 </file>
 
 <file path="src/components/Navbar.jsx">
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
-const Navbar = ({ isLoggedIn }) => {
+const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [language, setLanguage] = useState("en");
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem("language");
-    if (savedLang) setLanguage(savedLang);
-  }, []);
+  const isAdmin = !!localStorage.getItem("adminToken");
+  const isPharmacist = !!localStorage.getItem("pharmacistToken");
 
-  const handleLanguageChange = (e) => {
-    setLanguage(e.target.value);
-    localStorage.setItem("language", e.target.value);
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("pharmacistToken");
+    logout?.();
+
+    navigate("/", { replace: true }); // 🔥 IMPORTANT
   };
 
-  const translations = {
-    en: {
-      dashboard: "Dashboard",
-      profile: "Profile",
-      aushadhi: "Aushadhi",
-      suraksha: "Suraksha",
-      raksha: "Raksha",
-      login: "Login",
-      logout: "Logout",
-    },
-    hi: {
-      dashboard: "डैशबोर्ड",
-      profile: "प्रोफ़ाइल",
-      aushadhi: "औषधि",
-      suraksha: "सुरक्षा",
-      raksha: "रक्षा",
-      login: "लॉग इन",
-      logout: "लॉग आउट",
-    },
-  };
+  // Common links based on role
+  const guestLinks = (
+    <Link to="/login" className="font-semibold block py-2">
+      Login
+    </Link>
+  );
+
+  const userLinks = (
+    <>
+      <Link to="/userdashboard" className="block py-2">
+        Dashboard
+      </Link>
+      <Link to="/profile" className="block py-2">
+        Profile
+      </Link>
+      <Link to="/aushadhi" className="block py-2">
+        Aushadhi
+      </Link>
+      <Link to="/suraksha" className="block py-2">
+        Suraksha
+      </Link>
+      <Link to="/raksha" className="block py-2">
+        Raksha
+      </Link>
+      <button onClick={handleLogout} className="block py-2 text-left">
+        Logout
+      </button>
+    </>
+  );
+
+  const pharmacistLinks = (
+    <>
+      <Link to="/pharmacy-admin" className="block py-2">
+        Pharmacy Dashboard
+      </Link>
+      <button onClick={handleLogout} className="block py-2 text-left">
+        Logout
+      </button>
+    </>
+  );
+
+  const adminLinks = (
+    <>
+      <Link to="/admin/dashboard" className="block py-2">
+        Admin Dashboard
+      </Link>
+      <button onClick={handleLogout} className="block py-2 text-left">
+        Logout
+      </button>
+    </>
+  );
 
   return (
-    <nav className="bg-teal-200 p-4 shadow-md">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        
-        {/* Logo */}
-        <Link to="/">
-          <h1 className="text-xl font-bold text-gray-800">
-            Svasthya Hub
-          </h1>
+    <nav className="bg-gray-300 p-4 shadow-md">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <Link to="/" className="text-xl font-bold">
+          Svasthya Hub
         </Link>
 
-        {/* Desktop */}
-        <div className="hidden md:flex items-center space-x-6">
-
-          {/* PUBLIC */}
-          <Link to="/" className="font-semibold">
-            {translations[language].dashboard}
-          </Link>
-
-          {/* PRIVATE */}
-          {isLoggedIn && (
-            <>
-              <Link to="/profile">{translations[language].profile}</Link>
-              <Link to="/aushadhi">{translations[language].aushadhi}</Link>
-              <Link to="/suraksha">{translations[language].suraksha}</Link>
-              <Link to="/raksha">{translations[language].raksha}</Link>
-            </>
-          )}
-
-          {/* AUTH */}
-          <Link
-            to={isLoggedIn ? "/login" : "/login"}
-            className="font-semibold text-blue-600"
-          >
-            {isLoggedIn
-              ? translations[language].logout
-              : translations[language].login}
-          </Link>
-
-          {/* Language */}
-          <select
-            value={language}
-            onChange={handleLanguageChange}
-            className="ml-4 px-2 py-1 rounded-md border bg-white"
-          >
-            <option value="en">English</option>
-            <option value="hi">हिन्दी</option>
-          </select>
+        {/* Desktop Menu */}
+        <div className="hidden md:flex gap-6 items-center">
+          {!user && !isAdmin && !isPharmacist && guestLinks}
+          {user && userLinks}
+          {isPharmacist && pharmacistLinks}
+          {isAdmin && adminLinks}
         </div>
 
-        {/* Mobile Button */}
-        <button
-          className="md:hidden"
-          onClick={() => setIsOpen(!isOpen)}
-        >
+        {/* Mobile Toggle Button */}
+        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
           {isOpen ? <X /> : <Menu />}
         </button>
       </div>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden mt-4 space-y-4 p-4 bg-teal-200 rounded-lg">
-          <Link to="/">{translations[language].dashboard}</Link>
-
-          {isLoggedIn && (
-            <>
-              <Link to="/profile">{translations[language].profile}</Link>
-              <Link to="/aushadhi">{translations[language].aushadhi}</Link>
-              <Link to="/suraksha">{translations[language].suraksha}</Link>
-              <Link to="/raksha">{translations[language].raksha}</Link>
-            </>
-          )}
-
-          <Link to="/login" className="font-semibold text-blue-600">
-            {isLoggedIn
-              ? translations[language].logout
-              : translations[language].login}
-          </Link>
-
-          <select
-            value={language}
-            onChange={handleLanguageChange}
-            className="mt-2 px-2 py-1 rounded-md border bg-white"
-          >
-            <option value="en">English</option>
-            <option value="hi">हिन्दी</option>
-          </select>
+        <div className="md:hidden mt-2 px-4 bg-teal-100 rounded shadow-lg">
+          {!user && !isAdmin && !isPharmacist && guestLinks}
+          {user && userLinks}
+          {isPharmacist && pharmacistLinks}
+          {isAdmin && adminLinks}
         </div>
       )}
     </nav>
@@ -869,11 +877,12 @@ export default function AdminLogin() {
         localStorage.setItem("adminToken", res.data.token);
 
         // ✅ Navigate ONLY after token is saved
-        navigate("/admin/dashboard", { replace: true });
+        setTimeout(() => {
+          navigate("/admin/dashboard", { replace: true });
+        }, 0);
       } else {
         alert("Login failed: token not received");
       }
-
     } catch (err) {
       console.error("Admin login error:", err.response?.data || err.message);
       alert(err.response?.data?.message || "Invalid credentials");
@@ -2100,7 +2109,7 @@ const Login = () => {
       if (isLogin) {
         // log the user in globally using AuthContext
         login(res.data.user, res.data.token);
-        navigate("/dashboard");
+        navigate("/userdashboard", { replace: true });
       } else {
         alert("Registration successful! Please log in now.");
         setIsLogin(true);
@@ -2264,7 +2273,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const PharmacistLogin = () => {
-  const [email, setEmail] = useState("");     // ✅ email
+  const [email, setEmail] = useState(""); // ✅ email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -2273,7 +2282,7 @@ const PharmacistLogin = () => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist-auth/login`,
-        { email, password }                    // ✅ send email
+        { email, password } // ✅ send email
       );
 
       // clear other auth (optional but fine)
@@ -2282,8 +2291,9 @@ const PharmacistLogin = () => {
 
       // save pharmacist token
       localStorage.setItem("pharmacistToken", res.data.token);
-
-      navigate("/pharmacy-admin");
+      setTimeout(() => {
+        navigate("/pharmacy-admin", { replace: true });
+      }, 0);
     } catch (err) {
       setError("Login failed. Check email or password.");
     }
@@ -3422,6 +3432,17 @@ module.exports = {
   },
   plugins: [],
 };
+</file>
+
+<file path="vercel.json">
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
 </file>
 
 <file path="vite.config.js">

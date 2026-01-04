@@ -6,14 +6,14 @@ import { useAuth } from "../context/AuthContext";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, pharmacist, admin,logout } = useAuth();
 
   const isAdmin = !!localStorage.getItem("adminToken");
   const isPharmacist = !!localStorage.getItem("pharmacistToken");
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("pharmacistToken");
+    // localStorage.removeItem("adminToken");
+    // localStorage.removeItem("pharmacistToken");
     logout?.();
 
     navigate("/", { replace: true }); // 🔥 IMPORTANT
@@ -51,9 +51,8 @@ const Navbar = () => {
 
   const pharmacistLinks = (
     <>
-      <Link to="/pharmacy-admin" className="block py-2">
-        Pharmacy Dashboard
-      </Link>
+      {pharmacist && <Link to="/pharmacy-admin">Pharmacy Dashboard</Link>}
+
       <button onClick={handleLogout} className="block py-2 text-left">
         Logout
       </button>
@@ -62,9 +61,7 @@ const Navbar = () => {
 
   const adminLinks = (
     <>
-      <Link to="/admin/dashboard" className="block py-2">
-        Admin Dashboard
-      </Link>
+      {admin && <Link to="/admin/dashboard">Admin Dashboard</Link>}
       <button onClick={handleLogout} className="block py-2 text-left">
         Logout
       </button>
@@ -72,7 +69,7 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-teal-200 p-4 shadow-md">
+    <nav className="bg-gray-300 p-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link to="/" className="text-xl font-bold">
           Svasthya Hub

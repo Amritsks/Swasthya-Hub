@@ -347,9 +347,9 @@ const Footer = () => (
 
       {/* CONTACT */}
       <div className="space-y-3 text-gray-400">
-        <div className="flex gap-2"><Mail /> hudsvasthya@gmail.com</div>
-        <div className="flex gap-2"><Phone /> +91 9523443854</div>
-        <div className="flex gap-2"><MapPin /> India</div>
+        <div className="flex gap-2"><Mail /> <a href="mailto:hudsvasthya@gmail.com">hudsvasthya@gmail.com</a></div>
+        <div className="flex gap-2"><Phone /> <a href="tel:+91 9523443854">+91 9523443854</a></div>
+        <div className="flex gap-2"><MapPin />Jaipur, Rajasthan, India</div>
       </div>
 
     </div>
