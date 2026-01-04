@@ -81,43 +81,134 @@ const Login = () => {
     }
   };
 
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role);
-    if (role === "pharmacist") navigate("/pharmacist-login");
-    if (role === "admin") navigate("/admin/login");
-  };
-
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex justify-center mb-4">
-          <img src={logo} alt="Logo" className="w-20 h-20 rounded-full" />
+    <div className="bg-slate-50 text-slate-900 font-sans">
+
+      {/* HERO */}
+      <header
+        className="text-white py-20 px-6"
+        style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <span className="bg-sky-500/20 text-sky-300 px-4 py-1 rounded-full text-sm font-semibold border border-sky-500/30">
+              India's First Pharm.D-Led Clinical Network
+            </span>
+
+            <h1 className="text-5xl md:text-6xl font-bold mt-6 leading-tight">
+              Beyond Supply. <br />
+              <span className="text-sky-400">Clinical Partnership.</span>
+            </h1>
+
+            <p className="text-slate-300 text-lg mt-6 max-w-lg">
+              Stop just buying medicine. Start managing your health with expert
+              oversight from Pharm.D professionals. We ensure every dose is
+              safe, effective, and tailored to you.
+            </p>
+
+            <div className="flex gap-4 mt-10 flex-wrap">
+              <button className="bg-sky-500 hover:bg-sky-400 px-8 py-4 rounded-xl font-bold text-lg transition">
+                Get Your Safety Audit
+              </button>
+              <button className="border border-slate-500 hover:bg-white/10 px-8 py-4 rounded-xl font-bold text-lg transition">
+                Meet the Doctor
+              </button>
+            </div>
+          </div>
+
+          {/* DOCTOR CARD */}
+          <div className="relative">
+            <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
+            <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-xl">
+                  🩺
+                </div>
+                <div>
+                  <p className="font-bold text-xl">Dr. Ankit Rana</p>
+                  <p className="text-sky-400 text-sm italic">
+                    Doctor of Pharmacy (Pharm.D)
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                  <span>Clinical Audits</span>
+                  <span className="text-sky-400 font-bold">500+</span>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                  <span>Med-Safety Rating</span>
+                  <span className="text-sky-400 font-bold">99.9%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* FEATURES */}
+      <section className="py-20 px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-slate-800">
+            Why SvasthyaHub is Different
+          </h2>
+          <p className="text-slate-500 mt-4">
+            We solve the risks that standard pharmacies ignore.
+          </p>
         </div>
 
-        {/* ROLE BUTTONS */}
-        <div className="flex justify-center gap-3 mb-6">
-          {["user", "pharmacist", "admin"].map((role) => (
-            <button
-              key={role}
-              onClick={() => handleRoleSelect(role)}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                selectedRole === role
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 hover:bg-blue-100"
-              }`}
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              icon: "⚠️",
+              color: "red",
+              text: "Standard pharmacies just deliver a box. They don't check if your medications clash or if they are right for you.",
+              solution: "Clinical Safety Audits",
+            },
+            {
+              icon: "💊",
+              color: "blue",
+              text: "Patients often miss doses or take them incorrectly, leading to slow recovery or complications.",
+              solution: "Adherence Coaching",
+            },
+            {
+              icon: "🛡️",
+              color: "green",
+              text: "Side effects go unreported. Patients suffer in silence without knowing if it's the drug or the disease.",
+              solution: "Pharmacovigilance",
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="bg-white p-8 rounded-2xl border border-slate-200 hover:shadow-xl transition group"
             >
-              {role === "user" && "👤 User"}
-              {role === "pharmacist" && "💊 Pharmacist"}
-              {role === "admin" && "🧑‍💼 Admin"}
-            </button>
+              <div
+                className={`w-14 h-14 bg-${item.color}-100 text-${item.color}-600 rounded-full flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition`}
+              >
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-bold mb-3">The Problem</h3>
+              <p className="text-slate-500 mb-6">{item.text}</p>
+              <div className="pt-6 border-t border-slate-100 text-sky-600 font-semibold">
+                Our Solution: {item.solution}
+              </div>
+            </div>
           ))}
         </div>
+      </section>
+      
+      {/*User Form */}
+      <div className="flex justify-center items-center p-4  bg-gradient-to-br from-blue-50 to-blue-100 mb-2">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
 
         {/* USER FORM */}
         {selectedRole === "user" && (
           <>
             <h1 className="text-2xl font-bold mb-4 text-center">
-              {isLogin ? "User Login" : "User Registration"}
+              {isLogin ? "User Can Login Here 👇" : "User Can Register Here 👇"}
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,6 +297,26 @@ const Login = () => {
           </>
         )}
       </div>
+    </div>
+
+      {/* CTA */}
+      <section className="bg-sky-600 py-16 px-6 text-center text-white">
+        <h2 className="text-4xl font-bold mb-6">
+          Ready for a safer healthcare journey?
+        </h2>
+        <p className="text-sky-100 text-xl mb-10 max-w-2xl mx-auto">
+          Upload your prescription for a complimentary Clinical Safety Audit by
+          our Pharm.D team.
+        </p>
+        <button className="bg-white text-sky-600 px-10 py-4 rounded-full font-bold text-xl hover:bg-slate-100 transition shadow-lg">
+          Upload Prescription
+        </button>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-10 text-center text-slate-500 text-sm">
+        © 2025 SvasthyaHub. Founded by Dr. Ankit Rana.
+      </footer>
     </div>
   );
 };

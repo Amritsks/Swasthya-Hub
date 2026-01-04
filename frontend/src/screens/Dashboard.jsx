@@ -11,7 +11,7 @@ import {
   Heart,
   Mail,
   Phone,
-  MapPin
+  MapPin,
 } from "lucide-react";
 
 /* ================= CONTENT ================= */
@@ -24,7 +24,7 @@ const content = {
       "Experience the difference of a healthcare platform built on PharmD principles. We bridge the gap between diagnosis and recovery with precise medication therapy management and dedicated patient advocacy.",
     ctaPrimary: "Consult a PharmD",
     ctaSecondary: "Our Care Model",
-    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e"
+    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e",
   },
   features: {
     title: "Advanced Clinical Care for Every Patient",
@@ -34,24 +34,22 @@ const content = {
       {
         title: "Patient-First Medication Review",
         description:
-          "Every prescription is clinically reviewed to prevent interactions."
+          "Every prescription is clinically reviewed to prevent interactions.",
       },
       {
         title: "Therapeutic Outcome Monitoring",
         description:
-          "Continuous tracking and optimization of therapy outcomes."
+          "Continuous tracking and optimization of therapy outcomes.",
       },
       {
         title: "Collaborative Care Ecosystem",
-        description:
-          "Pharmacists, doctors, and caregivers working together."
+        description: "Pharmacists, doctors, and caregivers working together.",
       },
       {
         title: "Donor Assurance Program",
-        description:
-          "Guaranteed priority access to blood units for donors."
-      }
-    ]
+        description: "Guaranteed priority access to blood units for donors.",
+      },
+    ],
   },
   about: {
     title: "Founded on Clinical Excellence",
@@ -62,24 +60,28 @@ const content = {
     image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d",
     items: [
       { title: "Patient Advocacy", description: "Your health comes first." },
-      { title: "Optimized Outcomes", description: "Better recovery, fewer risks." },
-      { title: "Life-Saving Assurance", description: "Care when it matters most." }
-    ]
+      {
+        title: "Optimized Outcomes",
+        description: "Better recovery, fewer risks.",
+      },
+      {
+        title: "Life-Saving Assurance",
+        description: "Care when it matters most.",
+      },
+    ],
   },
   footer: {
     brandName: "Svasthya Hub",
-    description:
-      "India’s pioneering PharmD-led clinical pharmacy network.",
-    quickLinks: ["Privacy Policy", "FAQs", "Partner Login", "Terms of Service"],
+    description: "India’s pioneering PharmD-led clinical pharmacy network.",
+    quickLinks: ["Privacy Policy", "FAQs", <a href="/pharmacist-login">Partner Login</a>, "Terms of Service"],
     services: [
       "Clinical Pharmacy",
       "Medication Therapy",
       "Health Consultations",
-      "Partner Programs"
+      "Partner Programs",
     ],
-    copyright:
-      `© ${new Date().getFullYear()} Svasthya Hub. All rights reserved.`
-  }
+    copyright: `© ${new Date().getFullYear()} Svasthya Hub. All rights reserved.`,
+  },
 };
 
 /* ================= PAGE ================= */
@@ -91,7 +93,8 @@ export default function Dashboard() {
       <Hero />
       <Features />
       <About />
-       <Trust />
+      <PatientVision />
+      <Trust />
       <Footer />
     </div>
   );
@@ -99,59 +102,58 @@ export default function Dashboard() {
 
 /* ================= HEADER ================= */
 
-const Header = () => (
-  <header className="sticky top-0 z-50 bg-white border-b">
-    <div className="max-w-7xl mx-auto h-20 px-6 flex items-center justify-between">
-      
-      {/* Logo */}
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 bg-[#0369a1] rounded-xl flex items-center justify-center">
-          <Stethoscope className="text-white" />
-        </div>
-        <span className="text-xl font-bold text-[#0369a1]">
-          Svasthya Hub
-        </span>
-      </div>
+// const Header = () => (
+//   <header className="sticky top-0 z-50 bg-white border-b">
+//     <div className="max-w-7xl mx-auto h-20 px-6 flex items-center justify-between">
 
-      {/* Navigation */}
-      <nav className="hidden md:flex items-center gap-8">
-        <a
-          href="#features"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          Features
-        </a>
-        <a
-          href="#about"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          About Us
-        </a>
-        <a
-          href="#partners"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          Partners
-        </a>
-        <a
-          href="#contact"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          Contact
-        </a>
-      </nav>
+//       {/* Logo */}
+//       <div className="flex items-center gap-3">
+//         <div className="w-11 h-11 bg-[#0369a1] rounded-xl flex items-center justify-center">
+//           <Stethoscope className="text-white" />
+//         </div>
+//         <span className="text-xl font-bold text-[#0369a1]">
+//           Svasthya Hub
+//         </span>
+//       </div>
 
-      {/* CTA */}
-      <div className="hidden md:block">
-        <button className="bg-[#0369a1] text-white px-6 py-2 rounded-md font-medium hover:bg-[#035f8f] transition">
-          Consult a PharmD
-        </button>
-      </div>
+//       {/* Navigation */}
+//       <nav className="hidden md:flex items-center gap-8">
+//         <a
+//           href="#features"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           Features
+//         </a>
+//         <a
+//           href="#about"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           About Us
+//         </a>
+//         <a
+//           href="#partners"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           Partners
+//         </a>
+//         <a
+//           href="#contact"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           Contact
+//         </a>
+//       </nav>
 
-    </div>
-  </header>
-);
+//       {/* CTA */}
+//       <div className="hidden md:block">
+//         <button className="bg-[#0369a1] text-white px-6 py-2 rounded-md font-medium hover:bg-[#035f8f] transition">
+//           Consult a PharmD
+//         </button>
+//       </div>
 
+//     </div>
+//   </header>
+// );
 
 /* ================= HERO ================= */
 
@@ -168,9 +170,7 @@ const Hero = () => (
           {content.hero.title}
         </h1>
 
-        <p className="mt-6 text-lg text-gray-600">
-          {content.hero.description}
-        </p>
+        <p className="mt-6 text-lg text-gray-600">{content.hero.description}</p>
 
         <div className="mt-8 flex gap-4">
           <button className="px-8 py-3 bg-[#0369a1] text-white rounded-lg font-semibold">
@@ -182,10 +182,7 @@ const Hero = () => (
         </div>
       </div>
 
-      <img
-        src={content.hero.image}
-        className="rounded-2xl shadow-xl"
-      />
+      <img src={content.hero.image} className="rounded-2xl shadow-xl" />
     </div>
   </section>
 );
@@ -208,7 +205,10 @@ const Features = () => (
         {content.features.items.map((item, i) => {
           const Icon = FEATURE_ICONS[i];
           return (
-            <div key={i} className="p-6 rounded-2xl border shadow hover:shadow-xl">
+            <div
+              key={i}
+              className="p-6 rounded-2xl border shadow hover:shadow-xl"
+            >
               <Icon className="w-7 h-7 text-[#0369a1]" />
               <h3 className="mt-4 text-xl font-semibold">{item.title}</h3>
               <p className="mt-2 text-gray-600">{item.description}</p>
@@ -252,12 +252,51 @@ const About = () => (
     </div>
   </section>
 );
+
+/* ================= Patient Visions================= */
+const PatientVision = () => (
+  <section className="w-full max-w-4xl mx-auto mt-10">
+    <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition">
+
+      {/* Subtle Accent */}
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-teal-400" />
+
+      <div className="p-8 sm:p-10">
+
+        {/* Heading */}
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">
+          World-Class Safety in Every Neighborhood
+        </h2>
+
+        {/* Divider */}
+        <div className="w-16 h-1 bg-blue-600 rounded-full mb-6" />
+
+        {/* Content */}
+        <p className="text-slate-600 leading-relaxed text-base sm:text-lg">
+          We are on a mission to ensure you never have to second-guess your healthcare.
+          <span className="font-semibold text-slate-800"> SvasthyaHub</span> is bringing
+          hospital-grade safety checks to your local pharmacy—so every prescription
+          is verified, every interaction is checked, and every patient is protected.
+        </p>
+
+        <p className="text-slate-600 leading-relaxed text-base sm:text-lg mt-4">
+          We promise
+          <span className="font-semibold text-blue-600"> Verified Quality</span>,
+          <span className="font-semibold text-green-600"> Expert Guidance</span>, and
+          <span className="font-semibold text-teal-600"> Fair Prices</span>
+          {" "}for every family in Bharat. Because your health deserves nothing less.
+        </p>
+
+      </div>
+    </div>
+  </section>
+);
+
 /* ================= PARTNERS / TRUST ================= */
 
 const Trust = () => (
   <section className="py-24 bg-white">
     <div className="max-w-7xl mx-auto px-6 text-center">
-      
       <h2 className="text-5xl font-bold text-gray-900">
         Trusted by Leaders in Healthcare
       </h2>
@@ -314,7 +353,6 @@ const Trust = () => (
 const Footer = () => (
   <footer className="bg-gray-900 text-white pt-16 pb-8">
     <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12">
-      
       {/* BRAND */}
       <div>
         <h3 className="text-xl font-bold">{content.footer.brandName}</h3>
@@ -347,11 +385,18 @@ const Footer = () => (
 
       {/* CONTACT */}
       <div className="space-y-3 text-gray-400">
-        <div className="flex gap-2"><Mail /> <a href="mailto:hudsvasthya@gmail.com">hudsvasthya@gmail.com</a></div>
-        <div className="flex gap-2"><Phone /> <a href="tel:+91 9523443854">+91 9523443854</a></div>
-        <div className="flex gap-2"><MapPin />Jaipur, Rajasthan, India</div>
+        <div className="flex gap-2">
+          <Mail />{" "}
+          <a href="mailto:hudsvasthya@gmail.com">hubsvasthya@gmail.com</a>
+        </div>
+        <div className="flex gap-2">
+          <Phone /> <a href="tel:+91 9523443854">+91 9523443854</a>
+        </div>
+        <div className="flex gap-2">
+          <MapPin />
+          Jaipur, Rajasthan, India
+        </div>
       </div>
-
     </div>
 
     <p className="mt-12 text-center text-gray-500">

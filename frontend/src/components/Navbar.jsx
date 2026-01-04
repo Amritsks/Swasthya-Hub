@@ -2,29 +2,71 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, pharmacist, admin,logout } = useAuth();
+  const { user, pharmacist, admin, logout } = useAuth();
+ const [isDesktop, setIsDesktop] = useState(false);
 
   const isAdmin = !!localStorage.getItem("adminToken");
   const isPharmacist = !!localStorage.getItem("pharmacistToken");
 
   const handleLogout = () => {
-    // localStorage.removeItem("adminToken");
-    // localStorage.removeItem("pharmacistToken");
     logout?.();
 
     navigate("/", { replace: true }); // 🔥 IMPORTANT
   };
 
+  // useEffect(() => {
+  //   const checkScreen = () => {
+  //     setIsDesktop(window.innerWidth >= 768); // md breakpoint
+  //   };
+
+  //   checkScreen();
+  //   window.addEventListener("resize", checkScreen);
+  //   return () => window.removeEventListener("resize", checkScreen);
+  // }, []);
+
   // Common links based on role
-  const guestLinks = (
-    <Link to="/login" className="font-semibold block py-2">
-      Login
+const guestLinks = (
+  <div className="flex flex-col gap-3">
+    <Link to="/" className="hover:text-teal-700">
+      Dashboard
     </Link>
-  );
+
+    <div className="border-t pt-2">
+      <p className="text-sm font-semibold text-gray-600 mb-1">
+        Login as:
+      </p>
+
+      <div className="flex flex-col gap-1 pl-2">
+        <Link
+          to="/login"
+          className="text-sm hover:text-teal-700"
+        >
+          User
+        </Link>
+
+        <Link
+          to="/admin/login"
+          className="text-sm hover:text-teal-700"
+        >
+          Admin
+        </Link>
+
+        <Link
+          to="/pharmacist-login"
+          className="text-sm hover:text-teal-700"
+        >
+          Pharmacist
+        </Link>
+      </div>
+    </div>
+  </div>
+);
+
 
   const userLinks = (
     <>
@@ -69,35 +111,33 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-gray-300 p-4 shadow-md">
+    <nav className="bg-indigo-100 p-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link to="/" className="text-xl font-bold">
-          Svasthya Hub
+          SvasthyaHub
         </Link>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex gap-6 items-center">
-          {!user && !isAdmin && !isPharmacist && guestLinks}
-          {user && userLinks}
-          {isPharmacist && pharmacistLinks}
-          {isAdmin && adminLinks}
-        </div>
+        {/* Menu Icon */}
+        <div
+          className="relative"
+          onMouseEnter={isDesktop ? () => setIsOpen(true) : undefined}
+          onMouseLeave={isDesktop ? () => setIsOpen(false) : undefined}
+        >
+          <button onClick={!isDesktop ? () => setIsOpen(!isOpen) : undefined}>
+            {isOpen ? <X /> : <Menu />}
+          </button>
 
-        {/* Mobile Toggle Button */}
-        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X /> : <Menu />}
-        </button>
+          {/* Dropdown Menu */}
+          {isOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-teal-100 rounded shadow-lg p-4 z-50">
+              {!user && !isAdmin && !isPharmacist && guestLinks}
+              {user && userLinks}
+              {isPharmacist && pharmacistLinks}
+              {isAdmin && adminLinks}
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden mt-2 px-4 bg-teal-100 rounded shadow-lg">
-          {!user && !isAdmin && !isPharmacist && guestLinks}
-          {user && userLinks}
-          {isPharmacist && pharmacistLinks}
-          {isAdmin && adminLinks}
-        </div>
-      )}
     </nav>
   );
 };

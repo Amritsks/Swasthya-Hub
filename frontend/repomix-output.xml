@@ -235,97 +235,93 @@ import AdminDashboard from "./screens/AdminDashboard";
 import { useAuth } from "./context/AuthContext";
 
 const App = () => {
-  const { user } = useAuth();
-
-  const isLoggedIn = !!user;
-  const isAdmin = !!localStorage.getItem("adminToken");
-  const isPharmacist = !!localStorage.getItem("pharmacistToken");
+  const { user, role } = useAuth(); // ✅ single source of truth
 
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-        {/* ✅ Navbar ALWAYS visible */}
+        {/* Navbar always visible */}
         <Navbar />
 
         <Routes>
-          {/* ---------- PUBLIC ---------- */}
+          {/* ---------- HOME ---------- */}
           <Route
-  path="/"
-  element={
-    isAdmin ? (
-      <Navigate to="/admin/dashboard" />
-    ) : isPharmacist ? (
-      <Navigate to="/pharmacy-admin" />
-    ) : isLoggedIn ? (
-      <Navigate to="/userdashboard" />
-    ) : (
-      <Dashboard />
-    )
-  }
-/>
-
-
-          <Route path="/login" element={<Login />} />
-
-          {/* ---------- USER ---------- */}
-          <Route
-  path="/userdashboard"
-  element={isLoggedIn ? <UserDashboard /> : <Navigate to="/login" />}
-/>
-
-          <Route
-            path="/profile"
-            element={isLoggedIn ? <Profile /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/suraksha"
-            element={isLoggedIn ? <Suraksha /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/raksha"
-            element={isLoggedIn ? <Raksha /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/aushadhi"
-            element={isLoggedIn ? <Aushadhi /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/doctor"
-            element={isLoggedIn ? <Doctor /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/labtest"
-            element={isLoggedIn ? <Labtest /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/healthassist"
-            element={isLoggedIn ? <Healthassist /> : <Navigate to="/login" />}
-          />
-
-          {/* ---------- PHARMACIST ---------- */}
-          <Route path="/pharmacist-login" element={<PharmacistLogin />} />
-          <Route
-            path="/pharmacy-admin"
+            path="/"
             element={
-              isPharmacist ? (
-                <PharmacyAdmin />
+              role === "admin" ? (
+                <Navigate to="/admin/dashboard" replace />
+              ) : role === "pharmacist" ? (
+                <Navigate to="/pharmacy-admin" replace />
+              ) : role === "user" ? (
+                <Navigate to="/userdashboard" replace />
               ) : (
-                <Navigate to="/pharmacist-login" />
+                <Dashboard />
               )
             }
           />
 
+          {/* ---------- PUBLIC ---------- */}
+          <Route
+            path="/login"
+            element={role === "guest" ? <Login /> : <Navigate to="/" replace />}
+          />
+
+          {/* ---------- USER ---------- */}
+          <Route
+            path="/userdashboard"
+            element={role === "user" ? <UserDashboard /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/profile"
+            element={role === "user" ? <Profile /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/suraksha"
+            element={role === "user" ? <Suraksha /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/raksha"
+            element={role === "user" ? <Raksha /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/aushadhi"
+            element={role === "user" ? <Aushadhi /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/doctor"
+            element={role === "user" ? <Doctor /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/labtest"
+            element={role === "user" ? <Labtest /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/healthassist"
+            element={role === "user" ? <Healthassist /> : <Navigate to="/login" replace />}
+          />
+
+          {/* ---------- PHARMACIST ---------- */}
+          <Route
+            path="/pharmacist-login"
+            element={role === "guest" ? <PharmacistLogin /> : <Navigate to="/" replace />}
+          />
+          <Route
+            path="/pharmacy-admin"
+            element={role === "pharmacist" ? <PharmacyAdmin /> : <Navigate to="/pharmacist-login" replace />}
+          />
+
           {/* ---------- ADMIN ---------- */}
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin/login"
+            element={role === "guest" ? <AdminLogin /> : <Navigate to="/" replace />}
+          />
           <Route
             path="/admin/dashboard"
-            element={
-              isAdmin ? <AdminDashboard /> : <Navigate to="/admin/login" />
-            }
+            element={role === "admin" ? <AdminDashboard /> : <Navigate to="/admin/login" replace />}
           />
 
           {/* ---------- FALLBACK ---------- */}
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </Router>
@@ -344,22 +340,32 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useEffect} from "react";
+
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, pharmacist, admin,logout } = useAuth();
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const isAdmin = !!localStorage.getItem("adminToken");
   const isPharmacist = !!localStorage.getItem("pharmacistToken");
 
   const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("pharmacistToken");
     logout?.();
 
-    navigate("/", { replace: true }); // 🔥 IMPORTANT
+    navigate("/", { replace: true }); 
   };
+  useEffect(() => {
+  const checkScreen = () => {
+    setIsDesktop(window.innerWidth >= 768); 
+  };
+
+  checkScreen();
+  window.addEventListener("resize", checkScreen);
+  return () => window.removeEventListener("resize", checkScreen);
+}, []);
 
   // Common links based on role
   const guestLinks = (
@@ -393,9 +399,8 @@ const Navbar = () => {
 
   const pharmacistLinks = (
     <>
-      <Link to="/pharmacy-admin" className="block py-2">
-        Pharmacy Dashboard
-      </Link>
+      {pharmacist && <Link to="/pharmacy-admin">Pharmacy Dashboard</Link>}
+
       <button onClick={handleLogout} className="block py-2 text-left">
         Logout
       </button>
@@ -404,9 +409,7 @@ const Navbar = () => {
 
   const adminLinks = (
     <>
-      <Link to="/admin/dashboard" className="block py-2">
-        Admin Dashboard
-      </Link>
+      {admin && <Link to="/admin/dashboard">Admin Dashboard</Link>}
       <button onClick={handleLogout} className="block py-2 text-left">
         Logout
       </button>
@@ -415,35 +418,36 @@ const Navbar = () => {
 
   return (
     <nav className="bg-gray-300 p-4 shadow-md">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold">
-          Svasthya Hub
-        </Link>
+  <div className="max-w-7xl mx-auto flex justify-between items-center">
+    <Link to="/" className="text-xl font-bold">
+      Svasthya Hub
+    </Link>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex gap-6 items-center">
-          {!user && !isAdmin && !isPharmacist && guestLinks}
-          {user && userLinks}
-          {isPharmacist && pharmacistLinks}
-          {isAdmin && adminLinks}
-        </div>
+    {/* Menu Icon */}
+    <div
+      className="relative"
+      onMouseEnter={isDesktop ? () => setIsOpen(true) : undefined}
+      onMouseLeave={isDesktop ? () => setIsOpen(false) : undefined}
+    >
+      <button
+        onClick={!isDesktop ? () => setIsOpen(!isOpen) : undefined}
+      >
+        {isOpen ? <X /> : <Menu />}
+      </button>
 
-        {/* Mobile Toggle Button */}
-        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X /> : <Menu />}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
+      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="md:hidden mt-2 px-4 bg-teal-100 rounded shadow-lg">
+        <div className="absolute right-0 mt-2 w-48 bg-teal-100 rounded shadow-lg p-4 z-50">
           {!user && !isAdmin && !isPharmacist && guestLinks}
           {user && userLinks}
           {isPharmacist && pharmacistLinks}
           {isAdmin && adminLinks}
         </div>
       )}
-    </nav>
+    </div>
+  </div>
+</nav>
+
   );
 };
 
@@ -465,41 +469,70 @@ export default PhoneMockup;
 </file>
 
 <file path="src/context/AuthContext.jsx">
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // Retrieve user including token from localStorage
-  const [user, setUser] = useState(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-    // Return combined object with token added
-    return storedUser ? { ...storedUser, token } : null;
-  });
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState("guest"); // guest | user | pharmacist | admin
 
-  const login = (userData, token) => {
+  // 🔄 Restore auth on refresh
+  useEffect(() => {
+    if (localStorage.getItem("adminToken")) {
+      setRole("admin");
+    } else if (localStorage.getItem("pharmacistToken")) {
+      setRole("pharmacist");
+    } else {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const token = localStorage.getItem("token");
+      if (storedUser && token) {
+        setUser({ ...storedUser, token });
+        setRole("user");
+      }
+    }
+  }, []);
+
+  const loginUser = (userData, token) => {
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", token);
-    // Combine token in user state to expose via useAuth
     setUser({ ...userData, token });
+    setRole("user");
+  };
+
+  const loginPharmacist = (token) => {
+    localStorage.setItem("pharmacistToken", token);
+    setRole("pharmacist");
+  };
+
+  const loginAdmin = (token) => {
+    localStorage.setItem("adminToken", token);
+    setRole("admin");
   };
 
   const logout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.clear();
     setUser(null);
+    setRole("guest");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        role,
+        loginUser,
+        loginPharmacist,
+        loginAdmin,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
-export default AuthProvider;
 </file>
 
 <file path="src/hooks/useSocket.js">
@@ -854,12 +887,17 @@ const ResponsiveTable = ({ title, headers, children }) => (
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
+
   const navigate = useNavigate();
+  const { loginAdmin } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -868,24 +906,14 @@ export default function AdminLogin() {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/admin/login`,
-        { email, password },
-        { headers: { "Content-Type": "application/json" } }
+        { email, password }
       );
 
-      // ✅ Validate response
-      if (res.data?.token) {
-        localStorage.setItem("adminToken", res.data.token);
+      loginAdmin(res.data.token); // ✅ React state updated
 
-        // ✅ Navigate ONLY after token is saved
-        setTimeout(() => {
-          navigate("/admin/dashboard", { replace: true });
-        }, 0);
-      } else {
-        alert("Login failed: token not received");
-      }
-    } catch (err) {
-      console.error("Admin login error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Invalid credentials");
+      navigate("/admin/dashboard", { replace: true });
+    } catch {
+      alert("Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -893,39 +921,50 @@ export default function AdminLogin() {
 
   return (
     <div className="flex h-screen justify-center items-center bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-8 rounded-2xl shadow-md w-96"
+  <form
+    onSubmit={handleLogin}
+    className="bg-white p-8 rounded-2xl shadow-md w-96"
+  >
+    <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+
+    <input
+      type="email"
+      className="border w-full p-2 mb-4 rounded"
+      placeholder="Email"
+      onChange={(e) => setEmail(e.target.value)}
+      required
+    />
+
+    {/* ✅ PASSWORD + EYE WRAPPER */}
+    <div className="relative mb-4">
+      <input
+        type={showPassword ? "password" : "text"}
+        className="w-full p-2 pr-10 border rounded"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+
+      <button
+        type="button"
+        onClick={() => setShowPassword((p) => !p)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
-
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="border w-full p-2 mb-4 rounded"
-          required
-        />
-
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="border w-full p-2 mb-4 rounded"
-          required
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
     </div>
+
+    <button
+      type="submit"
+      disabled={loading}
+      className="bg-blue-500 text-white w-full py-2 rounded disabled:opacity-50"
+    >
+      {loading ? "Logging in..." : "Login"}
+    </button>
+  </form>
+</div>
+
   );
 }
 </file>
@@ -1896,9 +1935,9 @@ const Footer = () => (
 
       {/* CONTACT */}
       <div className="space-y-3 text-gray-400">
-        <div className="flex gap-2"><Mail /> hudsvasthya@gmail.com</div>
-        <div className="flex gap-2"><Phone /> +91 9523443854</div>
-        <div className="flex gap-2"><MapPin /> India</div>
+        <div className="flex gap-2"><Mail /> <a href="mailto:hudsvasthya@gmail.com">hubsvasthya@gmail.com</a></div>
+        <div className="flex gap-2"><Phone /> <a href="tel:+91 9523443854">+91 9523443854</a></div>
+        <div className="flex gap-2"><MapPin />Jaipur, Rajasthan, India</div>
       </div>
 
     </div>
@@ -2049,10 +2088,11 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/nlogo.jpg";
-import { useAuth } from "../context/AuthContext"; // import context hook
+import { useAuth } from "../context/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
-  const { login } = useAuth(); // get login method from context
+  const { loginUser } = useAuth(); // ✅ NEW CONTEXT METHOD
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -2065,7 +2105,9 @@ const Login = () => {
   });
 
   const [isLogin, setIsLogin] = useState(true);
-  const [selectedRole, setSelectedRole] = useState("user"); // 👈 role state added
+  const [selectedRole, setSelectedRole] = useState("user");
+  const [showPassword, setShowPassword] = useState(true); // 👁️ FIXED
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -2073,14 +2115,15 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (!form.email && !form.phone && !form.password) {
-      alert("Please provide email or phone and password!");
+    if (!form.password || (!form.email && !form.phone)) {
+      alert("Please provide email/phone and password");
       return;
     }
 
     if (!isLogin && (!form.name || !form.bloodGroup || !form.age)) {
-      alert("Please fill all required fields!");
+      alert("Please fill all required fields");
       return;
     }
 
@@ -2107,75 +2150,56 @@ const Login = () => {
       const res = await axios.post(url, payload);
 
       if (isLogin) {
-        // log the user in globally using AuthContext
-        login(res.data.user, res.data.token);
+        // ✅ CORRECT METHOD
+        loginUser(res.data.user, res.data.token);
+
+        // ✅ CORRECT REDIRECT
         navigate("/userdashboard", { replace: true });
       } else {
-        alert("Registration successful! Please log in now.");
+        alert("Registration successful! Please log in.");
         setIsLogin(true);
       }
     } catch (err) {
       console.error("Axios error:", err);
-      alert(err.response?.data?.error || "Login/Register failed!");
+      alert(err.response?.data?.error || "Login/Register failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Role button click handler
   const handleRoleSelect = (role) => {
     setSelectedRole(role);
-
     if (role === "pharmacist") navigate("/pharmacist-login");
     if (role === "admin") navigate("/admin/login");
-    // user role stays on same page
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-        {/* Logo */}
         <div className="flex justify-center mb-4">
-          <img
-            src={logo}
-            alt="Logo"
-            className="w-20 h-20 object-contain rounded-full"
-          />
+          <img src={logo} alt="Logo" className="w-20 h-20 rounded-full" />
         </div>
 
-        {/* Role Selection Buttons */}
+        {/* ROLE BUTTONS */}
         <div className="flex justify-center gap-3 mb-6">
-          <button
-            onClick={() => handleRoleSelect("user")}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${
-              selectedRole === "user"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 hover:bg-blue-100"
-            }`}
-          >
-            👤 User
-          </button>
-          <button
-            onClick={() => handleRoleSelect("pharmacist")}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${
-              selectedRole === "pharmacist"
-                ? "bg-green-600 text-white"
-                : "bg-gray-100 hover:bg-green-100"
-            }`}
-          >
-            💊 Pharmacist
-          </button>
-          <button
-            onClick={() => handleRoleSelect("admin")}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${
-              selectedRole === "admin"
-                ? "bg-purple-600 text-white"
-                : "bg-gray-100 hover:bg-purple-100"
-            }`}
-          >
-            🧑‍💼 Admin
-          </button>
+          {["user", "pharmacist", "admin"].map((role) => (
+            <button
+              key={role}
+              onClick={() => handleRoleSelect(role)}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                selectedRole === role
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 hover:bg-blue-100"
+              }`}
+            >
+              {role === "user" && "👤 User"}
+              {role === "pharmacist" && "💊 Pharmacist"}
+              {role === "admin" && "🧑‍💼 Admin"}
+            </button>
+          ))}
         </div>
 
-        {/* Only show user login/register form */}
+        {/* USER FORM */}
         {selectedRole === "user" && (
           <>
             <h1 className="text-2xl font-bold mb-4 text-center">
@@ -2186,7 +2210,6 @@ const Login = () => {
               {!isLogin && (
                 <>
                   <input
-                    type="text"
                     name="name"
                     placeholder="Full Name"
                     value={form.name}
@@ -2195,7 +2218,6 @@ const Login = () => {
                     required
                   />
                   <input
-                    type="text"
                     name="bloodGroup"
                     placeholder="Blood Group"
                     value={form.bloodGroup}
@@ -2204,8 +2226,8 @@ const Login = () => {
                     required
                   />
                   <input
-                    type="number"
                     name="age"
+                    type="number"
                     placeholder="Age"
                     value={form.age}
                     onChange={handleChange}
@@ -2216,36 +2238,46 @@ const Login = () => {
               )}
 
               <input
-                type="email"
                 name="email"
-                placeholder="Email (optional if using phone)"
+                placeholder="Email"
                 value={form.email}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
               />
+
               <input
-                type="number"
                 name="phone"
-                placeholder="Phone (optional if using email)"
+                placeholder="Phone"
                 value={form.phone}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
               />
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={form.password}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-                required
-              />
+
+              {/* PASSWORD WITH EYE */}
+              <div className="relative">
+                <input
+                  type={showPassword ? "password" : "text"}
+                  name="password"
+                  placeholder="Password"
+                  value={form.password}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-gray-500"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
 
               <button
-                type="submit"
-                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {isLogin ? "Login" : "Register"}
+                {loading ? "Logging in..." : isLogin ? "Login" : "Register"}
               </button>
             </form>
 
@@ -2271,63 +2303,80 @@ export default Login;
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
 
 const PharmacistLogin = () => {
-  const [email, setEmail] = useState(""); // ✅ email
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
 
-  const handleLogin = async () => {
+  const navigate = useNavigate();
+  const { loginPharmacist } = useAuth();
+
+  const handleLogin = async (e) => {
+     e.preventDefault();
+    setLoading(true);
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist-auth/login`,
-        { email, password } // ✅ send email
+        { email, password }
       );
 
-      // clear other auth (optional but fine)
-      localStorage.removeItem("user");
-      localStorage.removeItem("userToken");
+      loginPharmacist(res.data.token); // ✅ updates React state
 
-      // save pharmacist token
-      localStorage.setItem("pharmacistToken", res.data.token);
-      setTimeout(() => {
-        navigate("/pharmacy-admin", { replace: true });
-      }, 0);
-    } catch (err) {
-      setError("Login failed. Check email or password.");
+      navigate("/pharmacy-admin", { replace: true });
+    } catch {
+      setError("Invalid credentials");
+    }finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 border rounded shadow">
-      <h2 className="text-xl mb-4 font-semibold">Pharmacist Login</h2>
+  <h2 className="text-xl mb-4 font-semibold">Pharmacist Login</h2>
 
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full p-2 mb-3 border rounded"
-      />
+  <input
+    type="email"
+    className="w-full p-2 mb-3 border rounded"
+    placeholder="Email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+  />
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full p-2 mb-3 border rounded"
-      />
+  {/* 🔐 Password Field */}
+  <div className="relative mb-3">
+    <input
+      type={showPassword ? "password" : "text"}
+      placeholder="Password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      className="w-full p-2 pr-10 border rounded"
+    />
 
-      <button
-        onClick={handleLogin}
-        className="w-full bg-teal-600 text-white py-2 rounded"
-      >
-        Login
-      </button>
+    <button
+      type="button"
+      onClick={() => setShowPassword((p) => !p)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+    >
+      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  </div>
 
-      {error && <p className="text-red-600 mt-2">{error}</p>}
-    </div>
+  <button
+    onClick={handleLogin}
+    disabled={loading}
+    className="w-full bg-teal-600 text-white py-2 rounded disabled:opacity-50"
+  >
+    {loading ? "Logging in..." : "Login"}
+  </button>
+
+  {error && <p className="text-red-600 mt-2">{error}</p>}
+</div>
+
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import bgImage from "../assets/bgc.avif";
+// import bgImage from "../assets/bgc.avif";
 import logo from "../assets/nlogo.jpg";
 
 const UserDashboard = ({ user }) => {
@@ -30,8 +30,8 @@ const UserDashboard = ({ user }) => {
 
   return (
     <div
-      className="relative min-h-screen w-full flex flex-col items-center justify-start p-4 sm:p-6 bg-no-repeat bg-center bg-cover md:bg-fixed"
-      style={{ backgroundImage: `url(${bgImage})` }}
+      className="relative min-h-screen w-full flex flex-col items-center justify-start p-4 sm:p-6 bg-no-repeat bg-center bg-cover md:bg-fixed bg-[radial-gradient(#bae6fd_1px,transparent_1px)] "
+      // style={{ backgroundImage: `url(${bgImage})` }}
     >
       {/* Overlay for readability */}
       <div className="absolute inset-0 bg-white/40 sm:bg-white/30 md:bg-white/20"></div>
