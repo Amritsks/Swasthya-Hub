@@ -22,7 +22,7 @@ const content = {
     title: "Expert PharmD Care for Superior Patient Outcomes",
     description:
       "Experience the difference of a healthcare platform built on PharmD principles. We bridge the gap between diagnosis and recovery with precise medication therapy management and dedicated patient advocacy.",
-    ctaPrimary: "Consult a PharmD",
+    ctaPrimary: <a href="/login">Consult a PharmD</a>,
     ctaSecondary: "Our Care Model",
     image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e",
   },
@@ -262,9 +262,11 @@ const PatientVision = () => (
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-teal-400" />
 
       <div className="p-8 sm:p-10">
-
+         <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">
+          <u>Founder's Vision</u>
+        </h2>
         {/* Heading */}
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">
+        <h2 className="text-2xl sm:text-3xl  text-slate-900 mb-4">
           World-Class Safety in Every Neighborhood
         </h2>
 
@@ -286,7 +288,12 @@ const PatientVision = () => (
           <span className="font-semibold text-teal-600"> Fair Prices</span>
           {" "}for every family in Bharat. Because your health deserves nothing less.
         </p>
-
+        <h2 className="text-2xl sm:text-3xl  text-slate-900">
+          Dr. Ankit Rana
+        </h2>
+      <h2 className="text-2xl sm:text-3xl  text-slate-900">
+          Doctor of Pharmacy
+        </h2>
       </div>
     </div>
   </section>
@@ -336,7 +343,7 @@ const Trust = () => (
 
         <div className="mt-8 flex justify-center gap-4">
           <button className="bg-white text-[#0369a1] px-8 py-3 rounded-lg font-semibold">
-            Find a Specialist
+            <a href="/login">Find a Specialist</a>
           </button>
           <button className="border border-white px-8 py-3 rounded-lg font-semibold">
             For Healthcare Providers

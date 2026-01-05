@@ -127,9 +127,72 @@ const Login = () => {
                   🩺
                 </div>
                 <div>
-                  <p className="font-bold text-xl">Dr. Ankit Rana</p>
+                  <p className="font-bold text-xl">Dr. Shivang Mishra</p>
                   <p className="text-sky-400 text-sm italic">
                     Doctor of Pharmacy (Pharm.D)
+                  </p>
+                  <p className="text-sky-400 text-sm italic">
+                     HelathCare Consultant
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                  <span>Clinical Audits</span>
+                  <span className="text-sky-400 font-bold">500+</span>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                  <span>Med-Safety Rating</span>
+                  <span className="text-sky-400 font-bold">99.9%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
+            <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-xl">
+                  🩺
+                </div>
+                <div>
+                  <p className="font-bold text-xl">Dr. Sachin Kumar</p>
+                  <p className="text-sky-400 text-sm italic">
+                    Doctor of Pharmacy (Pharm.D)
+                  </p>
+                  <p className="text-sky-400 text-sm italic">
+                    HelathCare Consultant
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                  <span>Clinical Audits</span>
+                  <span className="text-sky-400 font-bold">500+</span>
+                </div>
+                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                  <span>Med-Safety Rating</span>
+                  <span className="text-sky-400 font-bold">99.9%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
+            <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-xl">
+                  🩺
+                </div>
+                <div>
+                  <p className="font-bold text-xl">Dr. Anurag Singh</p>
+                  <p className="text-sky-400 text-sm italic">
+                    Doctor of Pharmacy (Pharm.D)
+                  </p>
+                  <p className="text-sky-400 text-sm italic">
+                    HelathCare Consultant
                   </p>
                 </div>
               </div>
