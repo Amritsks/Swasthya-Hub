@@ -68,5 +68,16 @@ router.post("/pharmacist", adminAuth, async (req, res) => {
   }
 });
 
+// ❌ DELETE pharmacist
+router.delete("/pharmacists/:id", adminAuth, async (req, res) => {
+  try {
+    await Pharmacist.findByIdAndDelete(req.params.id);
+    res.json({ message: "Pharmacist deleted" });
+  } catch (err) {
+    console.error("Delete pharmacist error:", err);
+    res.status(500).json({ message: "Failed to delete pharmacist" });
+  }
+});
+
 
 module.exports = router;

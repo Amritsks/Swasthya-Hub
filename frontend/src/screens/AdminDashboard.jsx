@@ -51,7 +51,6 @@ export default function AdminDashboard() {
     }
   };
 
- 
   // 🔐 Create Admin (NO TOKEN REQUIRED)
   const createAdmin = async (e) => {
     e.preventDefault();
@@ -93,94 +92,168 @@ export default function AdminDashboard() {
       alert(err.response?.data?.message || "Failed to create pharmacist");
     }
   };
+  // ❌ Delete Pharmacist
+  const deletePharmacist = async (id) => {
+    const token = localStorage.getItem("adminToken");
+
+    if (!window.confirm("Are you sure you want to delete this pharmacist?")) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      alert("Pharmacist deleted");
+      fetchAll();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete pharmacist");
+    }
+  };
 
   return (
-  <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
-    <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">
-      Admin Dashboard
-    </h1>
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">
+        Admin Dashboard
+      </h1>
 
-    {/* 📊 Summary */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
-      <StatCard title="Users" count={users.length} />
-      <StatCard title="Blood Requests" count={requests.length} />
-      <StatCard title="Pharmacists" count={pharmacists.length} />
+      {/* 📊 Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
+        <StatCard title="Users" count={users.length} />
+        <StatCard title="Blood Requests" count={requests.length} />
+        <StatCard title="Pharmacists" count={pharmacists.length} />
+      </div>
+
+      {/* ➕ Create Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
+        <FormCard title="Create Admin" onSubmit={createAdmin}>
+          <Input
+            placeholder="Email"
+            value={newAdmin.email}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, email: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Password"
+            type="password"
+            value={newAdmin.password}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, password: e.target.value })
+            }
+          />
+        </FormCard>
+
+        <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
+          <Input
+            placeholder="Name"
+            value={newPharmacist.name}
+            onChange={(e) =>
+              setNewPharmacist({ ...newPharmacist, name: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Email"
+            value={newPharmacist.email}
+            onChange={(e) =>
+              setNewPharmacist({ ...newPharmacist, email: e.target.value })
+            }
+          />
+          <Input
+            placeholder="Password"
+            type="password"
+            value={newPharmacist.password}
+            onChange={(e) =>
+              setNewPharmacist({ ...newPharmacist, password: e.target.value })
+            }
+          />
+        </FormCard>
+      </div>
+
+      {/* 📋 Tables */}
+      <ResponsiveTable
+  title="Registered Users"
+  headers={["Name", "Email", "Phone"]}
+  tableRows={users.map((u) => (
+    <tr key={u._id}>
+      <td className="p-3">{u.name}</td>
+      <td className="p-3">{u.email}</td>
+      <td className="p-3">{u.phone || "—"}</td>
+    </tr>
+  ))}
+  mobileCards={users.map((u) => (
+    <div
+      key={u._id}
+      className="bg-gray-50 rounded-lg p-4 shadow-sm"
+    >
+      <p className="font-semibold">{u.name}</p>
+      <p className="text-sm text-gray-600 break-all">{u.email}</p>
+      <p className="text-sm mt-1">📞 {u.phone || "—"}</p>
     </div>
+  ))}
+/>
 
-    {/* ➕ Create Section */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
-      <FormCard title="Create Admin" onSubmit={createAdmin}>
-        <Input
-          placeholder="Email"
-          value={newAdmin.email}
-          onChange={(e) =>
-            setNewAdmin({ ...newAdmin, email: e.target.value })
-          }
-        />
-        <Input
-          placeholder="Password"
-          type="password"
-          value={newAdmin.password}
-          onChange={(e) =>
-            setNewAdmin({ ...newAdmin, password: e.target.value })
-          }
-        />
-      </FormCard>
 
-      <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
-        <Input
-          placeholder="Name"
-          value={newPharmacist.name}
-          onChange={(e) =>
-            setNewPharmacist({ ...newPharmacist, name: e.target.value })
-          }
-        />
-        <Input
-          placeholder="Email"
-          value={newPharmacist.email}
-          onChange={(e) =>
-            setNewPharmacist({ ...newPharmacist, email: e.target.value })
-          }
-        />
-        <Input
-          placeholder="Password"
-          type="password"
-          value={newPharmacist.password}
-          onChange={(e) =>
-            setNewPharmacist({ ...newPharmacist, password: e.target.value })
-          }
-        />
-      </FormCard>
+      <ResponsiveTable
+  title="Blood Requests"
+  headers={["Blood Group", "Status"]}
+  tableRows={requests.map((r) => (
+    <tr key={r._id}>
+      <td className="p-3">{r.group}</td>
+      <td className="p-3">{r.status}</td>
+    </tr>
+  ))}
+  mobileCards={requests.map((r) => (
+    <div
+      key={r._id}
+      className="bg-gray-50 rounded-lg p-4 shadow-sm"
+    >
+      <p className="font-semibold">Blood Group: {r.group}</p>
+      <p className="text-sm mt-1">Status: {r.status}</p>
     </div>
+  ))}
+/>
 
-    {/* 📋 Tables */}
-    <ResponsiveTable title="Registered Users" headers={["Name", "Email"]}>
-      {users.map((u) => (
-        <tr key={u._id}>
-          <td className="p-3">{u.name}</td>
-          <td className="p-3">{u.email}</td>
-        </tr>
-      ))}
-    </ResponsiveTable>
 
-    <ResponsiveTable title="Blood Requests" headers={["Blood Group", "Status"]}>
-      {requests.map((r) => (
-        <tr key={r._id}>
-          <td className="p-3">{r.group}</td>
-          <td className="p-3">{r.status}</td>
-        </tr>
-      ))}
-    </ResponsiveTable>
+      <ResponsiveTable
+  title="Pharmacists"
+  headers={["Name", "Email", "Action"]}
+  tableRows={pharmacists.map((p) => (
+    <tr key={p._id}>
+      <td className="p-3">{p.name}</td>
+      <td className="p-3">{p.email}</td>
+      <td className="p-3">
+        <button
+          onClick={() => deletePharmacist(p._id)}
+          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  ))}
+  mobileCards={pharmacists.map((p) => (
+    <div
+      key={p._id}
+      className="bg-gray-50 rounded-lg p-4 shadow-sm"
+    >
+      <p className="font-semibold">{p.name}</p>
+      <p className="text-sm text-gray-600 break-all">{p.email}</p>
+      <button
+        onClick={() => deletePharmacist(p._id)}
+        className="mt-2 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+      >
+        Delete
+      </button>
+    </div>
+  ))}
+/>
 
-    <ResponsiveTable title="Pharmacists" headers={["Name", "Email"]}>
-      {pharmacists.map((p) => (
-        <tr key={p._id}>
-          <td className="p-3">{p.name}</td>
-          <td className="p-3">{p.email}</td>
-        </tr>
-      ))}
-    </ResponsiveTable>
-  </div>
+    </div>
   );
 }
 
@@ -213,24 +286,28 @@ const Input = (props) => (
   />
 );
 
-const ResponsiveTable = ({ title, headers, children }) => (
+const ResponsiveTable = ({ title, headers, tableRows, mobileCards }) => (
   <div className="bg-white rounded-xl shadow mb-8 sm:mb-10">
     <h2 className="text-lg sm:text-xl font-semibold p-4">{title}</h2>
-    <div className="overflow-x-auto">
+
+    {/* Desktop Table */}
+    <div className="hidden sm:block overflow-x-auto">
       <table className="min-w-full border-t">
         <thead className="bg-gray-200">
           <tr>
             {headers.map((h) => (
-              <th key={h} className="text-left p-3 text-sm sm:text-base">
+              <th key={h} className="text-left p-3">
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y text-sm sm:text-base">
-          {children}
-        </tbody>
+        <tbody className="divide-y">{tableRows}</tbody>
       </table>
     </div>
+
+    {/* Mobile Cards */}
+    <div className="sm:hidden space-y-3 p-4">{mobileCards}</div>
   </div>
 );
+
