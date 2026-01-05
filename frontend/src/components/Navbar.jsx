@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { user, pharmacist, admin, logout } = useAuth();
  const [isDesktop, setIsDesktop] = useState(false);
+ const menuRef = useRef(null);
+
 
   const isAdmin = !!localStorage.getItem("adminToken");
   const isPharmacist = !!localStorage.getItem("pharmacistToken");
@@ -28,6 +30,23 @@ const Navbar = () => {
   //   window.addEventListener("resize", checkScreen);
   //   return () => window.removeEventListener("resize", checkScreen);
   // }, []);
+
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (menuRef.current && !menuRef.current.contains(event.target)) {
+      setIsOpen(false);
+    }
+  };
+
+  if (isOpen) {
+    document.addEventListener("mousedown", handleClickOutside);
+  }
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [isOpen]);
+
 
   // Common links based on role
 const guestLinks = (
@@ -119,10 +138,12 @@ const guestLinks = (
 
         {/* Menu Icon */}
         <div
-          className="relative"
-          onMouseEnter={isDesktop ? () => setIsOpen(true) : undefined}
-          onMouseLeave={isDesktop ? () => setIsOpen(false) : undefined}
-        >
+  ref={menuRef}
+  className="relative"
+  onMouseEnter={isDesktop ? () => setIsOpen(true) : undefined}
+  onMouseLeave={isDesktop ? () => setIsOpen(false) : undefined}
+>
+
           <button onClick={!isDesktop ? () => setIsOpen(!isOpen) : undefined}>
             {isOpen ? <X /> : <Menu />}
           </button>
