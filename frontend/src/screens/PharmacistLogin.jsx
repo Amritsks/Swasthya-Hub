@@ -189,7 +189,7 @@ const PharmacistLogin = () => {
       <div className="p-8 sm:p-10">
 
         {/* Heading */}
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4">
+        <h2 className="text-xl  font-extrabold text-slate-900 mb-4">
           <u>Founder's Vision</u>
         </h2>
         <h2 className="text-2xl sm:text-3xl  text-slate-900 mb-4">
@@ -214,15 +214,15 @@ const PharmacistLogin = () => {
           and grow your business with confidence.
         </p>
 
-        <p className="text-slate-700 font-semibold text-lg mt-6">
+        <p className="text-slate-700 font-semibold text-lg mt-6 mb-4">
           Save lives. Build trust. Grow stronger.
           <span className="text-indigo-600"> Join the revolution.</span>
         </p>
-      <h2 className="text-2xl sm:text-3xl  text-slate-900">
-          Dr. Ankit Rana
+      <h2 className="font-semibold  text-slate-900">
+          <u>Dr. Ankit Rana</u>
         </h2>
-      <h2 className="text-2xl sm:text-3xl  text-slate-900">
-          Doctor of Pharmacy
+      <h2 className="font-semibold text-slate-900">
+          <u>Doctor of Pharmacy</u>
         </h2>
         
       </div>
