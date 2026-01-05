@@ -213,7 +213,7 @@ export default function AdminDashboard() {
       key={r._id}
       className="bg-gray-50 rounded-lg p-4 shadow-sm"
     >
-      <p className="font-semibold">Email: {r.donorPhone || "—"}</p>
+      <p className="font-semibold">Email: {r.requester || "—"}</p>
       <p className="font-semibold">Blood Group: {r.group}</p>
       <p className="text-sm mt-1">Status: {r.status}</p>
     </div>
