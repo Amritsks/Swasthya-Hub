@@ -26,9 +26,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(true); // 👁️ FIXED
   const [loading, setLoading] = useState(false);
   const [index, setIndex] = useState(0);
-  
 
-   useEffect(() => {
+  useEffect(() => {
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % doctors.length);
     }, 3500);
@@ -94,26 +93,26 @@ const Login = () => {
     }
   };
 
- const doctors = [
-  {
-    name: "Dr. Shivang Mishra",
-    title: "Doctor of Pharmacy (Pharm.D)",
-    role: "Healthcare Consultant",
-    image: Shivang,
-  },
-  {
-    name: "Dr. Sachin Kumar",
-    title: "Doctor of Pharmacy (Pharm.D)",
-    role: "Healthcare Consultant",
-    image: Sachin,
-  },
-  {
-    name: "Dr. Anurag Singh",
-    title: "Doctor of Pharmacy (Pharm.D)",
-    role: "Healthcare Consultant",
-    image: "/doctors/anurag.jpg",
-  },
-];
+  const doctors = [
+    {
+      name: "Dr. Shivang Mishra",
+      title: "Doctor of Pharmacy (Pharm.D)",
+      role: "Healthcare Consultant",
+      image: Shivang,
+    },
+    {
+      name: "Dr. Sachin Kumar",
+      title: "Doctor of Pharmacy (Pharm.D)",
+      role: "Healthcare Consultant",
+      image: Sachin,
+    },
+    {
+      name: "Dr. Anurag Singh",
+      title: "Doctor of Pharmacy (Pharm.D)",
+      role: "Healthcare Consultant",
+      image: "/doctors/anurag.jpg",
+    },
+  ];
 
   return (
     <div className="bg-slate-50 text-slate-900 font-sans">
@@ -142,81 +141,83 @@ const Login = () => {
             </p>
 
             <div className="flex gap-4 mt-10 flex-wrap">
-              <button className="bg-sky-500 hover:bg-sky-400 px-8 py-4 rounded-xl font-bold text-lg transition">
+              <a href="#userform"
+              className="bg-sky-500 hover:bg-sky-400 px-8 py-4 rounded-xl font-bold text-lg transition">
                 Get Your Safety Audit
-              </button>
-              <button className="border border-slate-500 hover:bg-white/10 px-8 py-4 rounded-xl font-bold text-lg transition">
+              </a>
+              <a href="#userform"
+              className="border border-slate-500 hover:bg-white/10 px-8 py-4 rounded-xl font-bold text-lg transition">
                 Meet the Doctor
-              </button>
+              </a>
             </div>
           </div>
 
           {/* DOCTOR CARD */}
           <div className="relative w-full max-w-lg mx-auto overflow-hidden">
-      {/* CARD */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={index}
-          initial={{ x: -120, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 120, opacity: 0 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
-        >
-          <div className="relative">
-            <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
+            {/* CARD */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={index}
+                initial={{ x: -120, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 120, opacity: 0 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              >
+                <div className="relative">
+                  <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
 
-            <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
-              <div className="flex items-center gap-4 mb-6">
-                {/* IMAGE */}
-                <img
-                  src={doctors[index].image}
-                  alt={doctors[index].name}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-sky-500"
+                  <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
+                    <div className="flex items-center gap-4 mb-6">
+                      {/* IMAGE */}
+                      <img
+                        src={doctors[index].image}
+                        alt={doctors[index].name}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-sky-500"
+                      />
+
+                      <div>
+                        <p className="font-bold text-xl">
+                          {doctors[index].name}
+                        </p>
+                        <p className="text-sky-400 text-sm italic">
+                          {doctors[index].title}
+                        </p>
+                        <p className="text-sky-400 text-sm italic">
+                          {doctors[index].role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                        <span>Clinical Audits</span>
+                        <span className="text-sky-400 font-bold">500+</span>
+                      </div>
+                      <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                        <span>Med-Safety Rating</span>
+                        <span className="text-sky-400 font-bold">99.9%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* DOT INDICATORS */}
+            <div className="flex justify-center gap-2 mt-6 mb-3">
+              {doctors.map((_, i) => (
+                <motion.span
+                  key={i}
+                  className="w-2.5 h-2.5 rounded-full bg-sky-500"
+                  animate={{
+                    opacity: index === i ? 1 : 0.4,
+                    scale: index === i ? 1.3 : 1,
+                  }}
+                  transition={{ duration: 0.3 }}
                 />
-
-                <div>
-                  <p className="font-bold text-xl">
-                    {doctors[index].name}
-                  </p>
-                  <p className="text-sky-400 text-sm italic">
-                    {doctors[index].title}
-                  </p>
-                  <p className="text-sky-400 text-sm italic">
-                    {doctors[index].role}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
-                  <span>Clinical Audits</span>
-                  <span className="text-sky-400 font-bold">500+</span>
-                </div>
-                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
-                  <span>Med-Safety Rating</span>
-                  <span className="text-sky-400 font-bold">99.9%</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* DOT INDICATORS */}
-      <div className="flex justify-center gap-2 mt-6 mb-3">
-        {doctors.map((_, i) => (
-          <motion.span
-            key={i}
-            className="w-2.5 h-2.5 rounded-full bg-sky-500"
-            animate={{
-              opacity: index === i ? 1 : 0.4,
-              scale: index === i ? 1.3 : 1,
-            }}
-            transition={{ duration: 0.3 }}
-          />
-        ))}
-      </div>
-    </div>
         </div>
       </header>
 
@@ -272,7 +273,10 @@ const Login = () => {
       </section>
 
       {/*User Form */}
-      <div className="flex justify-center items-center p-4  bg-gradient-to-br from-blue-50 to-blue-100 mb-2">
+      <div
+        id="userform"
+        className="flex justify-center items-center p-4  bg-gradient-to-br from-blue-50 to-blue-100 mb-2"
+      >
         <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
           {/* USER FORM */}
           {selectedRole === "user" && (
@@ -380,9 +384,12 @@ const Login = () => {
           Upload your prescription for a complimentary Clinical Safety Audit by
           our Pharm.D team.
         </p>
-        <button className="bg-white text-sky-600 px-10 py-4 rounded-full font-bold text-xl hover:bg-slate-100 transition shadow-lg">
+        <a
+          href="#userform"
+          className="inline-block bg-white text-sky-600 px-10 py-4 rounded-full font-bold text-xl hover:bg-slate-100 transition shadow-lg"
+        >
           Upload Prescription
-        </button>
+        </a>
       </section>
 
       {/* FOOTER */}

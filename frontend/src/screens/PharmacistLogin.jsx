@@ -58,12 +58,14 @@ const PharmacistLogin = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => setPartnerOpen(true)}
+              {/* <button
+                onClick={() => setPartnerOpen(true)} */}
+                <a href="#pharmacistform"
                 className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
               >
                 Become a Partner
-              </button>
+                </a>
+              {/* </button> */}
               <button
                 onClick={() => setDownloadOpen(true)}
                 className="bg-white border border-slate-300 px-8 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 transition"
@@ -136,7 +138,10 @@ const PharmacistLogin = () => {
       </section>
 
       {/*Pharmacist Form*/}
-      <div className="max-w-md mx-auto m-2  p-6 border rounded shadow ">
+      <div
+        id="pharmacistform"
+        className="max-w-md mx-auto m-2  p-6 border rounded shadow "
+      >
         <h2 className="flex justify-center text-xl mb-4 font-semibold">
           Pharmacist Can Login Here 👇
         </h2>
@@ -181,53 +186,58 @@ const PharmacistLogin = () => {
 
       {/* Pharmacist Vision */}
       <section className="w-full max-w-4xl mx-auto m-10">
-    <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition">
+          {/* Accent Line */}
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500" />
 
-      {/* Accent Line */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500" />
+          <div className="p-8 sm:p-10">
+            {/* Heading */}
+            <h2 className="text-xl  font-extrabold text-slate-900 mb-4">
+              <u>Founder's Vision</u>
+            </h2>
+            <h2 className="text-2xl sm:text-3xl  text-slate-900 mb-4">
+              Lead the Future of Pharmacy
+            </h2>
 
-      <div className="p-8 sm:p-10">
+            {/* Divider */}
+            <div className="w-16 h-1 bg-indigo-600 rounded-full mb-6" />
 
-        {/* Heading */}
-        <h2 className="text-xl  font-extrabold text-slate-900 mb-4">
-          <u>Founder's Vision</u>
-        </h2>
-        <h2 className="text-2xl sm:text-3xl  text-slate-900 mb-4">
-          Lead the Future of Pharmacy
-        </h2>
+            {/* Content */}
+            <p className="text-slate-600 leading-relaxed text-base sm:text-lg">
+              Don’t just survive the competition—
+              <span className="font-semibold text-slate-800">lead it</span>.
+              SvasthyaHub is empowering forward-thinking pharmacists to become
+              the most trusted clinical authority in their communities.
+            </p>
 
-        {/* Divider */}
-        <div className="w-16 h-1 bg-indigo-600 rounded-full mb-6" />
+            <p className="text-slate-600 leading-relaxed text-base sm:text-lg mt-4">
+              With our
+              <span className="font-semibold text-indigo-600">
+                {" "}
+                Pharm.D-led clinical technology
+              </span>{" "}
+              and
+              <span className="font-semibold text-green-600">
+                {" "}
+                high-margin supply chain
+              </span>
+              , we give you the power to protect patients, elevate your
+              professional role, and grow your business with confidence.
+            </p>
 
-        {/* Content */}
-        <p className="text-slate-600 leading-relaxed text-base sm:text-lg">
-          Don’t just survive the competition—<span className="font-semibold text-slate-800">lead it</span>.
-          SvasthyaHub is empowering forward-thinking pharmacists to become the most trusted
-          clinical authority in their communities.
-        </p>
-
-        <p className="text-slate-600 leading-relaxed text-base sm:text-lg mt-4">
-          With our
-          <span className="font-semibold text-indigo-600"> Pharm.D-led clinical technology</span> and
-          <span className="font-semibold text-green-600"> high-margin supply chain</span>,
-          we give you the power to protect patients, elevate your professional role,
-          and grow your business with confidence.
-        </p>
-
-        <p className="text-slate-700 font-semibold text-lg mt-6 mb-4">
-          Save lives. Build trust. Grow stronger.
-          <span className="text-indigo-600"> Join the revolution.</span>
-        </p>
-      <h2 className="font-semibold  text-slate-900">
-          <u>Dr. Ankit Rana</u>
-        </h2>
-      <h2 className="font-semibold text-slate-900">
-          <u>Doctor of Pharmacy</u>
-        </h2>
-        
-      </div>
-    </div>
-  </section>
+            <p className="text-slate-700 font-semibold text-lg mt-6 mb-4">
+              Save lives. Build trust. Grow stronger.
+              <span className="text-indigo-600"> Join the revolution.</span>
+            </p>
+            <h2 className="font-semibold  text-slate-900">
+              <u>Dr. Ankit Rana</u>
+            </h2>
+            <h2 className="font-semibold text-slate-900">
+              <u>Doctor of Pharmacy</u>
+            </h2>
+          </div>
+        </div>
+      </section>
 
       {/* FOOTER */}
       <footer className="bg-slate-900 text-slate-300 py-12">

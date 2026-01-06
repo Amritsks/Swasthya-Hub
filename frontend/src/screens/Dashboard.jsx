@@ -73,7 +73,12 @@ const content = {
   footer: {
     brandName: "Svasthya Hub",
     description: "India’s pioneering PharmD-led clinical pharmacy network.",
-    quickLinks: ["Privacy Policy", "FAQs", <a href="/pharmacist-login">Partner Login</a>, "Terms of Service"],
+    quickLinks: [
+      "Privacy Policy",
+      "FAQs",
+      <a href="/pharmacist-login">Partner Login</a>,
+      "Terms of Service",
+    ],
     services: [
       "Clinical Pharmacy",
       "Medication Therapy",
@@ -257,12 +262,11 @@ const About = () => (
 const PatientVision = () => (
   <section className="w-full max-w-4xl mx-auto mt-10">
     <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition">
-
       {/* Subtle Accent */}
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-teal-400" />
 
       <div className="p-8 sm:p-10">
-         <h2 className="text-xl font-extrabold text-slate-900 mb-4">
+        <h2 className="text-xl font-extrabold text-slate-900 mb-4">
           <u>Founder's Vision</u>
         </h2>
         {/* Heading */}
@@ -275,23 +279,27 @@ const PatientVision = () => (
 
         {/* Content */}
         <p className="text-slate-600 leading-relaxed text-base sm:text-lg">
-          We are on a mission to ensure you never have to second-guess your healthcare.
-          <span className="font-semibold text-slate-800"> SvasthyaHub</span> is bringing
-          hospital-grade safety checks to your local pharmacy—so every prescription
-          is verified, every interaction is checked, and every patient is protected.
+          We are on a mission to ensure you never have to second-guess your
+          healthcare.
+          <span className="font-semibold text-slate-800"> SvasthyaHub</span> is
+          bringing hospital-grade safety checks to your local pharmacy—so every
+          prescription is verified, every interaction is checked, and every
+          patient is protected.
         </p>
 
         <p className="text-slate-600 leading-relaxed text-base sm:text-lg mt-4">
           We promise
-          <span className="font-semibold text-blue-600"> Verified Quality</span>,
-          <span className="font-semibold text-green-600"> Expert Guidance</span>, and
-          <span className="font-semibold text-teal-600"> Fair Prices</span>
-          {" "}for every family in Bharat. Because your health deserves nothing less.
+          <span className="font-semibold text-blue-600"> Verified Quality</span>
+          ,
+          <span className="font-semibold text-green-600"> Expert Guidance</span>
+          , and
+          <span className="font-semibold text-teal-600"> Fair Prices</span> for
+          every family in Bharat. Because your health deserves nothing less.
         </p>
         <h2 className="font-semibold  text-slate-900">
           <u>Dr. Ankit Rana</u>
         </h2>
-      <h2 className="font-semibold text-slate-900">
+        <h2 className="font-semibold text-slate-900">
           <u>Doctor of Pharmacy</u>
         </h2>
       </div>
@@ -353,7 +361,6 @@ const Trust = () => (
     </div>
   </section>
 );
-
 
 /* ================= FOOTER (FIXED) ================= */
 
