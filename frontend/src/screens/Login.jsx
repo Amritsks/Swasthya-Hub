@@ -141,12 +141,16 @@ const Login = () => {
             </p>
 
             <div className="flex gap-4 mt-10 flex-wrap">
-              <a href="#userform"
-              className="bg-sky-500 hover:bg-sky-400 px-8 py-4 rounded-xl font-bold text-lg transition">
+              <a
+                href="#userform"
+                className="bg-sky-500 hover:bg-sky-400 px-8 py-4 rounded-xl font-bold text-lg transition"
+              >
                 Get Your Safety Audit
               </a>
-              <a href="#userform"
-              className="border border-slate-500 hover:bg-white/10 px-8 py-4 rounded-xl font-bold text-lg transition">
+              <a
+                href="#userform"
+                className="border border-slate-500 hover:bg-white/10 px-8 py-4 rounded-xl font-bold text-lg transition"
+              >
                 Meet the Doctor
               </a>
             </div>
@@ -292,6 +296,7 @@ const Login = () => {
                   <>
                     <input
                       name="name"
+                      type="text"
                       placeholder="Full Name"
                       value={form.name}
                       onChange={handleChange}
@@ -300,6 +305,7 @@ const Login = () => {
                     />
                     <input
                       name="bloodGroup"
+                      type="text"
                       placeholder="Blood Group"
                       value={form.bloodGroup}
                       onChange={handleChange}
@@ -319,10 +325,14 @@ const Login = () => {
                 )}
 
                 <input
+                  type="email"
                   name="email"
-                  placeholder="Email"
+                  placeholder="example@gmail.com"
                   value={form.email}
                   onChange={handleChange}
+                  required
+                  pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                  title="Enter a valid email address (example@gmail.com)"
                   className="w-full border p-2 rounded"
                 />
 
@@ -330,7 +340,15 @@ const Login = () => {
                   name="phone"
                   placeholder="Phone"
                   value={form.phone}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 10);
+                    setForm({ ...form, phone: value });
+                  }}
+                  maxLength={10}
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
                   className="w-full border p-2 rounded"
                 />
 
