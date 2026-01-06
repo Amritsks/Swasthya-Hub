@@ -324,17 +324,14 @@ const Login = () => {
                   </>
                 )}
 
+                
                 <input
-                  type="email"
                   name="email"
-                  placeholder="example@gmail.com"
+                  placeholder="Email"
                   value={form.email}
                   onChange={handleChange}
-                  required
-                  pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                  title="Enter a valid email address (example@gmail.com)"
                   className="w-full border p-2 rounded"
-                />
+                />  
 
                 <input
                   name="phone"
