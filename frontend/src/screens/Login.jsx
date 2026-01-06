@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/nlogo.jpg";
+import Shivang from "../assets/Shivang.jpeg";
+import Sachin from "../assets/Sachin kumar.jpeg";
 import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Login = () => {
   const { loginUser } = useAuth(); // ✅ NEW CONTEXT METHOD
@@ -22,6 +25,16 @@ const Login = () => {
   const [selectedRole, setSelectedRole] = useState("user");
   const [showPassword, setShowPassword] = useState(true); // 👁️ FIXED
   const [loading, setLoading] = useState(false);
+  const [index, setIndex] = useState(0);
+  
+
+   useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % doctors.length);
+    }, 3500);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -81,9 +94,29 @@ const Login = () => {
     }
   };
 
+ const doctors = [
+  {
+    name: "Dr. Shivang Mishra",
+    title: "Doctor of Pharmacy (Pharm.D)",
+    role: "Healthcare Consultant",
+    image: Shivang,
+  },
+  {
+    name: "Dr. Sachin Kumar",
+    title: "Doctor of Pharmacy (Pharm.D)",
+    role: "Healthcare Consultant",
+    image: Sachin,
+  },
+  {
+    name: "Dr. Anurag Singh",
+    title: "Doctor of Pharmacy (Pharm.D)",
+    role: "Healthcare Consultant",
+    image: "/doctors/anurag.jpg",
+  },
+];
+
   return (
     <div className="bg-slate-50 text-slate-900 font-sans">
-
       {/* HERO */}
       <header
         className="text-white py-20 px-6"
@@ -119,20 +152,37 @@ const Login = () => {
           </div>
 
           {/* DOCTOR CARD */}
+          <div className="relative w-full max-w-lg mx-auto overflow-hidden">
+      {/* CARD */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={index}
+          initial={{ x: -120, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 120, opacity: 0 }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+        >
           <div className="relative">
             <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
+
             <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-xl">
-                  🩺
-                </div>
+                {/* IMAGE */}
+                <img
+                  src={doctors[index].image}
+                  alt={doctors[index].name}
+                  className="w-14 h-14 rounded-full object-cover border-2 border-sky-500"
+                />
+
                 <div>
-                  <p className="font-bold text-xl">Dr. Shivang Mishra</p>
-                  <p className="text-sky-400 text-sm italic">
-                    Doctor of Pharmacy (Pharm.D)
+                  <p className="font-bold text-xl">
+                    {doctors[index].name}
                   </p>
                   <p className="text-sky-400 text-sm italic">
-                     HelathCare Consultant
+                    {doctors[index].title}
+                  </p>
+                  <p className="text-sky-400 text-sm italic">
+                    {doctors[index].role}
                   </p>
                 </div>
               </div>
@@ -149,66 +199,24 @@ const Login = () => {
               </div>
             </div>
           </div>
-          <div className="relative">
-            <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
-            <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-xl">
-                  🩺
-                </div>
-                <div>
-                  <p className="font-bold text-xl">Dr. Sachin Kumar</p>
-                  <p className="text-sky-400 text-sm italic">
-                    Doctor of Pharmacy (Pharm.D)
-                  </p>
-                  <p className="text-sky-400 text-sm italic">
-                    HelathCare Consultant
-                  </p>
-                </div>
-              </div>
+        </motion.div>
+      </AnimatePresence>
 
-              <div className="space-y-4">
-                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
-                  <span>Clinical Audits</span>
-                  <span className="text-sky-400 font-bold">500+</span>
-                </div>
-                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
-                  <span>Med-Safety Rating</span>
-                  <span className="text-sky-400 font-bold">99.9%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="relative">
-            <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
-            <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-xl">
-                  🩺
-                </div>
-                <div>
-                  <p className="font-bold text-xl">Dr. Anurag Singh</p>
-                  <p className="text-sky-400 text-sm italic">
-                    Doctor of Pharmacy (Pharm.D)
-                  </p>
-                  <p className="text-sky-400 text-sm italic">
-                    HelathCare Consultant
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
-                  <span>Clinical Audits</span>
-                  <span className="text-sky-400 font-bold">500+</span>
-                </div>
-                <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
-                  <span>Med-Safety Rating</span>
-                  <span className="text-sky-400 font-bold">99.9%</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* DOT INDICATORS */}
+      <div className="flex justify-center gap-2 mt-6 mb-3">
+        {doctors.map((_, i) => (
+          <motion.span
+            key={i}
+            className="w-2.5 h-2.5 rounded-full bg-sky-500"
+            animate={{
+              opacity: index === i ? 1 : 0.4,
+              scale: index === i ? 1.3 : 1,
+            }}
+            transition={{ duration: 0.3 }}
+          />
+        ))}
+      </div>
+    </div>
         </div>
       </header>
 
@@ -262,105 +270,106 @@ const Login = () => {
           ))}
         </div>
       </section>
-      
+
       {/*User Form */}
       <div className="flex justify-center items-center p-4  bg-gradient-to-br from-blue-50 to-blue-100 mb-2">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+          {/* USER FORM */}
+          {selectedRole === "user" && (
+            <>
+              <h1 className="text-2xl font-bold mb-4 text-center">
+                {isLogin
+                  ? "User Can Login Here 👇"
+                  : "User Can Register Here 👇"}
+              </h1>
 
-        {/* USER FORM */}
-        {selectedRole === "user" && (
-          <>
-            <h1 className="text-2xl font-bold mb-4 text-center">
-              {isLogin ? "User Can Login Here 👇" : "User Can Register Here 👇"}
-            </h1>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <>
+                    <input
+                      name="name"
+                      placeholder="Full Name"
+                      value={form.name}
+                      onChange={handleChange}
+                      className="w-full border p-2 rounded"
+                      required
+                    />
+                    <input
+                      name="bloodGroup"
+                      placeholder="Blood Group"
+                      value={form.bloodGroup}
+                      onChange={handleChange}
+                      className="w-full border p-2 rounded"
+                      required
+                    />
+                    <input
+                      name="age"
+                      type="number"
+                      placeholder="Age"
+                      value={form.age}
+                      onChange={handleChange}
+                      className="w-full border p-2 rounded"
+                      required
+                    />
+                  </>
+                )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <>
-                  <input
-                    name="name"
-                    placeholder="Full Name"
-                    value={form.name}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                  <input
-                    name="bloodGroup"
-                    placeholder="Blood Group"
-                    value={form.bloodGroup}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                  <input
-                    name="age"
-                    type="number"
-                    placeholder="Age"
-                    value={form.age}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                </>
-              )}
-
-              <input
-                name="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-
-              <input
-                name="phone"
-                placeholder="Phone"
-                value={form.phone}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-
-              {/* PASSWORD WITH EYE */}
-              <div className="relative">
                 <input
-                  type={showPassword ? "password" : "text"}
-                  name="password"
-                  placeholder="Password"
-                  value={form.password}
+                  name="email"
+                  placeholder="Email"
+                  value={form.email}
                   onChange={handleChange}
-                  className="w-full border p-2 rounded pr-10"
-                  required
+                  className="w-full border p-2 rounded"
                 />
+
+                <input
+                  name="phone"
+                  placeholder="Phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                />
+
+                {/* PASSWORD WITH EYE */}
+                <div className="relative">
+                  <input
+                    type={showPassword ? "password" : "text"}
+                    name="password"
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-gray-500"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-gray-500"
+                  disabled={loading}
+                  className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {loading ? "Logging in..." : isLogin ? "Login" : "Register"}
                 </button>
-              </div>
+              </form>
 
-              <button
-                disabled={loading}
-                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
+              <p
+                className="text-sm text-center mt-4 text-blue-600 cursor-pointer"
+                onClick={() => setIsLogin(!isLogin)}
               >
-                {loading ? "Logging in..." : isLogin ? "Login" : "Register"}
-              </button>
-            </form>
-
-            <p
-              className="text-sm text-center mt-4 text-blue-600 cursor-pointer"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin
-                ? "Don't have an account? Register"
-                : "Already have an account? Login"}
-            </p>
-          </>
-        )}
+                {isLogin
+                  ? "Don't have an account? Register"
+                  : "Already have an account? Login"}
+              </p>
+            </>
+          )}
+        </div>
       </div>
-    </div>
 
       {/* CTA */}
       <section className="bg-sky-600 py-16 px-6 text-center text-white">

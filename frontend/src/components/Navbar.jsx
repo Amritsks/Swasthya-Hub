@@ -8,9 +8,8 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { user, pharmacist, admin, logout } = useAuth();
- const [isDesktop, setIsDesktop] = useState(false);
- const menuRef = useRef(null);
-
+  const [isDesktop, setIsDesktop] = useState(false);
+  const menuRef = useRef(null);
 
   const isAdmin = !!localStorage.getItem("adminToken");
   const isPharmacist = !!localStorage.getItem("pharmacistToken");
@@ -32,60 +31,47 @@ const Navbar = () => {
   // }, []);
 
   useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (menuRef.current && !menuRef.current.contains(event.target)) {
-      setIsOpen(false);
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
     }
-  };
 
-  if (isOpen) {
-    document.addEventListener("mousedown", handleClickOutside);
-  }
-
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, [isOpen]);
-
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   // Common links based on role
-const guestLinks = (
-  <div className="flex flex-col gap-3">
-    <Link to="/" className="hover:text-teal-700">
-      Dashboard
-    </Link>
+  const guestLinks = (
+    <div className="flex flex-col gap-3">
+      <Link to="/" className="hover:text-teal-700">
+        Dashboard
+      </Link>
 
-    <div className="border-t pt-2">
-      <p className="text-sm font-semibold text-gray-600 mb-1">
-        Login as:
-      </p>
+      <div className="border-t pt-2">
+        <p className="text-sm font-semibold text-gray-600 mb-1">Login as:</p>
 
-      <div className="flex flex-col gap-1 pl-2">
-        <Link
-          to="/login"
-          className="text-sm hover:text-teal-700"
-        >
-          User
-        </Link>
+        <div className="flex flex-col gap-1 pl-2">
+          <Link to="/login" className="text-sm hover:text-teal-700">
+            User
+          </Link>
 
-        <Link
-          to="/admin/login"
-          className="text-sm hover:text-teal-700"
-        >
-          Admin
-        </Link>
+          <Link to="/admin/login" className="text-sm hover:text-teal-700">
+            Admin
+          </Link>
 
-        <Link
-          to="/pharmacist-login"
-          className="text-sm hover:text-teal-700"
-        >
-          Pharmacist
-        </Link>
+          <Link to="/pharmacist-login" className="text-sm hover:text-teal-700">
+            Pharmacist
+          </Link>
+        </div>
       </div>
     </div>
-  </div>
-);
-
+  );
 
   const userLinks = (
     <>
@@ -138,12 +124,11 @@ const guestLinks = (
 
         {/* Menu Icon */}
         <div
-  ref={menuRef}
-  className="relative"
-  onMouseEnter={isDesktop ? () => setIsOpen(true) : undefined}
-  onMouseLeave={isDesktop ? () => setIsOpen(false) : undefined}
->
-
+          ref={menuRef}
+          className="relative"
+          onMouseEnter={isDesktop ? () => setIsOpen(true) : undefined}
+          onMouseLeave={isDesktop ? () => setIsOpen(false) : undefined}
+        >
           <button onClick={!isDesktop ? () => setIsOpen(!isOpen) : undefined}>
             {isOpen ? <X /> : <Menu />}
           </button>
