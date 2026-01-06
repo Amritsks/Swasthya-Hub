@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/nlogo.jpg";
 import Shivang from "../assets/Shivang.jpeg";
-import Sachin from "../assets/Sachin kumar.jpeg";
+import Sachin from "../assets/Sachin.jpeg";
 import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
