@@ -116,7 +116,7 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-indigo-100 p-4 shadow-md">
+    <nav className="bg-white p-4 shadow-md">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link to="/" className="text-xl font-bold">
           SvasthyaHub
@@ -135,7 +135,7 @@ const Navbar = () => {
 
           {/* Dropdown Menu */}
           {isOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-teal-100 rounded shadow-lg p-4 z-50">
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded shadow-lg p-4 z-50">
               {!user && !isAdmin && !isPharmacist && guestLinks}
               {user && userLinks}
               {isPharmacist && pharmacistLinks}
