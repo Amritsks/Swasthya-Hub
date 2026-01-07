@@ -22,7 +22,7 @@ const Doctor = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 p-6">
+    <div className="min-h-screen p-6 bg-gray-100 relative">
       <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">
         Find Your <span className="text-indigo-600">Doctor</span>
       </h1>

@@ -22,7 +22,7 @@ const AIHealthAssist = () => {
   );
 
   return (
-    <div className="flex-1 md:ml-64 pt-6 md:pt-24 px-4 sm:px-6 md:px-8 space-y-8 bg-slate-100 min-h-screen">
+    <div className="min-h-screen p-6 bg-gray-100 relative">
       <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">
         AI <span className="text-green-600">Health Assist</span>
       </h1>
