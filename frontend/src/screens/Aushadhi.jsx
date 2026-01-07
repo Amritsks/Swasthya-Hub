@@ -164,7 +164,7 @@ const Aushadhi = () => {
 
       {/* -------- SEARCH -------- */}
       <input
-        className="w-full max-w-md mx-auto block p-3 rounded-xl border shadow-sm"
+        className="w-full max-w-md mx-auto block p-3 m-3 rounded-xl border shadow-sm"
         placeholder="Search medicine..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
