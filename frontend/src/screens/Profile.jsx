@@ -167,7 +167,7 @@ const Profile = () => {
   return (
     <div
       className="min-h-screen bg-gray-100 p-6 bg-cover bg-center"
-      style={{ backgroundImage: `url(${bgImage})` }}
+      // style={{ backgroundImage: `url(${bgImage})` }}
     >
       <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center"> Hello, <span className="text-teal-600">{userName || "Guest"}</span></h1>
 

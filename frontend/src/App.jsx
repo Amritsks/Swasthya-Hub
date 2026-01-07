@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import UserSidebar from "./components/UserSidebar";
 
 import Dashboard from "./screens/Dashboard";
 import UserDashboard from "./screens/UserDashboard";
@@ -31,89 +32,97 @@ const App = () => {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-        {/* Navbar always visible */}
+        {/* Top Navbar (mobile + desktop header) */}
         <Navbar />
 
-        <Routes>
-          {/* ---------- HOME ---------- */}
-          <Route
-            path="/"
-            element={
-              role === "admin" ? (
-                <Navigate to="/admin/dashboard" replace />
-              ) : role === "pharmacist" ? (
-                <Navigate to="/pharmacy-admin" replace />
-              ) : role === "user" ? (
-                <Navigate to="/userdashboard" replace />
-              ) : (
-                <Dashboard />
-              )
-            }
-          />
+        {/* ✅ Sidebar ONLY for USER on md+ */}
+        {role === "user" && (
+          <UserSidebar userName={user?.name || "User"} />
+        )}
 
-          {/* ---------- PUBLIC ---------- */}
-          <Route
-            path="/login"
-            element={role === "guest" ? <Login /> : <Navigate to="/" replace />}
-          />
+        {/* Main Content */}
+        <main className={role === "user" ? "md:ml-64 pt-16" : "pt-16"}>
+          <Routes>
+            {/* ---------- HOME ---------- */}
+            <Route
+              path="/"
+              element={
+                role === "admin" ? (
+                  <Navigate to="/admin/dashboard" replace />
+                ) : role === "pharmacist" ? (
+                  <Navigate to="/pharmacy-admin" replace />
+                ) : role === "user" ? (
+                  <Navigate to="/userdashboard" replace />
+                ) : (
+                  <Dashboard />
+                )
+              }
+            />
 
-          {/* ---------- USER ---------- */}
-          <Route
-            path="/userdashboard"
-            element={role === "user" ? <UserDashboard /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/profile"
-            element={role === "user" ? <Profile /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/suraksha"
-            element={role === "user" ? <Suraksha /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/raksha"
-            element={role === "user" ? <Raksha /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/aushadhi"
-            element={role === "user" ? <Aushadhi /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/doctor"
-            element={role === "user" ? <Doctor /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/labtest"
-            element={role === "user" ? <Labtest /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/healthassist"
-            element={role === "user" ? <Healthassist /> : <Navigate to="/login" replace />}
-          />
+            {/* ---------- PUBLIC ---------- */}
+            <Route
+              path="/login"
+              element={role === "guest" ? <Login /> : <Navigate to="/" replace />}
+            />
 
-          {/* ---------- PHARMACIST ---------- */}
-          <Route
-            path="/pharmacist-login"
-            element={role === "guest" ? <PharmacistLogin /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/pharmacy-admin"
-            element={role === "pharmacist" ? <PharmacyAdmin /> : <Navigate to="/pharmacist-login" replace />}
-          />
+            {/* ---------- USER ---------- */}
+            <Route
+              path="/userdashboard"
+              element={role === "user" ? <UserDashboard /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/profile"
+              element={role === "user" ? <Profile /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/suraksha"
+              element={role === "user" ? <Suraksha /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/raksha"
+              element={role === "user" ? <Raksha /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/aushadhi"
+              element={role === "user" ? <Aushadhi /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/doctor"
+              element={role === "user" ? <Doctor /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/labtest"
+              element={role === "user" ? <Labtest /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/healthassist"
+              element={role === "user" ? <Healthassist /> : <Navigate to="/login" replace />}
+            />
 
-          {/* ---------- ADMIN ---------- */}
-          <Route
-            path="/admin/login"
-            element={role === "guest" ? <AdminLogin /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/admin/dashboard"
-            element={role === "admin" ? <AdminDashboard /> : <Navigate to="/admin/login" replace />}
-          />
+            {/* ---------- PHARMACIST ---------- */}
+            <Route
+              path="/pharmacist-login"
+              element={role === "guest" ? <PharmacistLogin /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/pharmacy-admin"
+              element={role === "pharmacist" ? <PharmacyAdmin /> : <Navigate to="/pharmacist-login" replace />}
+            />
 
-          {/* ---------- FALLBACK ---------- */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* ---------- ADMIN ---------- */}
+            <Route
+              path="/admin/login"
+              element={role === "guest" ? <AdminLogin /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/admin/dashboard"
+              element={role === "admin" ? <AdminDashboard /> : <Navigate to="/admin/login" replace />}
+            />
+
+            {/* ---------- FALLBACK ---------- */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
       </div>
     </Router>
   );

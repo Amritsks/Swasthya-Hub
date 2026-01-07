@@ -5,39 +5,35 @@ import useSocket from "../hooks/useSocket";
 
 const Aushadhi = () => {
   const { user } = useAuth();
-  const token = localStorage.getItem("token");
 
   const [prescription, setPrescription] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [prescriptions, setPrescriptions] = useState([]);
-  const [selectedMedicines, setSelectedMedicines] = useState([]); // ✅ new state
+  const [selectedMedicines, setSelectedMedicines] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Setup real-time socket connection for user notifications
   const socket = useSocket(user?.email);
 
-  // Fetch prescriptions on mount and whenever user changes
+  /* ---------------- FETCH PRESCRIPTIONS ---------------- */
   useEffect(() => {
-    if (!user || !user.token) return;
+    if (!user?.token) return;
+
     axios
       .get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${user.token}` },
       })
-      .then((res) => {
-        setPrescriptions(res.data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+      .then((res) => setPrescriptions(res.data))
+      .catch(console.error);
   }, [user]);
 
+  /* ---------------- SOCKET LISTENER ---------------- */
   useEffect(() => {
     if (!socket?.current) return;
 
-    const currentSocket = socket.current;
+    const s = socket.current;
 
-    currentSocket.on("prescriptionConfirmed", (data) => {
+    s.on("prescriptionConfirmed", (data) => {
       alert(data.message);
       setPrescriptions((prev) =>
         prev.map((p) =>
@@ -55,22 +51,17 @@ const Aushadhi = () => {
       );
     });
 
-    return () => {
-      if (currentSocket) {
-        currentSocket.off("prescriptionConfirmed");
-      }
-    };
-  }, [socket, user]);
+    return () => s.off("prescriptionConfirmed");
+  }, [socket]);
 
-  // Upload prescription file
+  /* ---------------- UPLOAD ---------------- */
   const handleFileChange = (e) => {
     setPrescription(e.target.files[0]);
     setUploadStatus("");
   };
 
   const handleUpload = async () => {
-    if (!prescription) return alert("Please select a prescription.");
-    if (!user) return alert("User not logged in.");
+    if (!prescription || !user) return;
 
     const formData = new FormData();
     formData.append("file", prescription);
@@ -78,252 +69,184 @@ const Aushadhi = () => {
     formData.append("userEmail", user.email);
 
     try {
-      setIsUploading(true); //  disable button
+      setIsUploading(true);
       setUploadStatus("Uploading...");
 
       await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`, //  important for prod
-          },
-        }
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
       setUploadStatus("Uploaded successfully!");
       setPrescription(null);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setUploadStatus("Upload failed.");
     } finally {
-      setIsUploading(false); // 🔓 enable button again
+      setIsUploading(false);
     }
   };
 
-  // Static medicines (for now)
+  /* ---------------- MEDICINES ---------------- */
   const medicines = [
     {
       name: "Paracetamol",
       dosage: "500mg",
-      steps: "Take 1 tablet every 6 hours after food",
+      steps: "Take 1 tablet every 6 hours",
     },
-    {
-      name: "Amoxicillin",
-      dosage: "250mg",
-      steps: "Take 1 capsule every 8 hours for 5 days",
-    },
-    {
-      name: "Vitamin C",
-      dosage: "500mg",
-      steps: "Take 1 tablet daily after breakfast",
-    },
-    {
-      name: "Vitamin D",
-      dosage: "400mg",
-      steps: "Take 1 tablet every 8 hours if pain persists",
-    },
-    {
-      name: "Combiflame",
-      dosage: "400mg",
-      steps: "Take 1 tablet every 8 hours if pain persists",
-    },
-    {
-      name: "Ciplox eye drops",
-      dosage: "Apply 2 drops",
-      steps: "Apply 2 drops twice daily",
-    },
+    { name: "Amoxicillin", dosage: "250mg", steps: "Every 8 hours for 5 days" },
+    { name: "Vitamin C", dosage: "500mg", steps: "Once daily" },
+    { name: "Vitamin D", dosage: "400mg", steps: "If pain persists" },
+    { name: "Combiflame", dosage: "400mg", steps: "If pain persists" },
+    { name: "Ciplox Eye Drops", dosage: "2 drops", steps: "Twice daily" },
   ];
 
-  const filteredMedicines = medicines.filter((medicine) =>
-    medicine.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMedicines = medicines.filter((m) =>
+    m.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // ✅ Handle selecting medicine
-  const toggleSelectMedicine = (medicineName) => {
+  const toggleSelectMedicine = (name) => {
     setSelectedMedicines((prev) =>
-      prev.includes(medicineName)
-        ? prev.filter((m) => m !== medicineName)
-        : [...prev, medicineName]
+      prev.includes(name) ? prev.filter((m) => m !== name) : [...prev, name]
     );
   };
 
-  // ✅ Handle submitting selected medicines
   const handleManualSubmit = async () => {
-    if (selectedMedicines.length === 0) {
-      return alert("Please select at least one medicine.");
-    }
+    if (!selectedMedicines.length) return alert("Select medicines");
 
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/manual`,
-        {
-          medicines: selectedMedicines,
-          userEmail: user.email,
-          userName: user.name,
-        },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
-      );
-      console.log("🔑 Current user token:", user?.token);
-      alert("✅ Medicine request submitted successfully!");
-      setSelectedMedicines([]);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to submit manual request.");
-    }
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/manual`,
+      {
+        medicines: selectedMedicines,
+        userEmail: user.email,
+        userName: user.name,
+      },
+      { headers: { Authorization: `Bearer ${user.token}` } }
+    );
+
+    alert("✅ Medicine request submitted");
+    setSelectedMedicines([]);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-50 px-2 py-4 sm:px-6 md:px-10 lg:px-20 overflow-y-auto">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3 sm:gap-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 text-center flex-1 break-words">
-          Svasthya <span className="text-teal-600">Aushadhi</span>
+    <main className="min-h-screen p-6 bg-gray-100 relative">
+      {/* -------- HEADER -------- */}
+      <div className="bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl p-6 sm:p-8 text-white">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+          Svasthya <span className="text-teal-100">Aushadhi</span>
         </h1>
-
-        {/* Upload Section */}
-        <div className="flex flex-col sm:flex-row items-center gap-2">
-          <label
-            htmlFor="prescription-upload"
-            className="cursor-pointer bg-white border border-gray-300 rounded px-4 py-2 shadow-sm hover:bg-gray-100"
-          >
-            {prescription ? prescription.name : "Select Prescription"}
-            <input
-              id="prescription-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </label>
-          <button
-            onClick={handleUpload}
-            disabled={!prescription || isUploading}
-            className={`bg-teal-500 text-white px-3 py-1 rounded 
-    ${isUploading ? "opacity-50 cursor-not-allowed" : "hover:bg-teal-600"}
-  `}
-          >
-            {isUploading ? "Uploading..." : "Upload"}
-          </button>
-        </div>
+        <p className="text-teal-100 mt-1">
+          Upload prescriptions or request medicines manually
+        </p>
       </div>
 
-      {/* Upload Status */}
-      {uploadStatus && (
-        <p
-          className={`text-center mb-4 font-semibold ${
-            uploadStatus.includes("success") ? "text-green-600" : "text-red-600"
-          }`}
+      {/* -------- UPLOAD -------- */}
+      <div className="bg-white p-6 rounded-xl shadow-sm flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <label className="cursor-pointer border rounded px-4 py-2 bg-slate-50 hover:bg-slate-100">
+          {prescription ? prescription.name : "Select Prescription"}
+          <input type="file" className="hidden" onChange={handleFileChange} />
+        </label>
+
+        <button
+          onClick={handleUpload}
+          disabled={!prescription || isUploading}
+          className="bg-teal-600 text-white px-6 py-2 rounded-lg disabled:opacity-50"
         >
+          {isUploading ? "Uploading..." : "Upload"}
+        </button>
+      </div>
+
+      {uploadStatus && (
+        <p className="text-center font-semibold text-teal-600">
           {uploadStatus}
         </p>
       )}
 
-      {/* SEARCH BAR */}
-      <div className="mb-6 max-w-lg mx-auto">
-        <input
-          type="text"
-          aria-label="Search medicine"
-          placeholder="Search medicine..."
-          className="w-full p-3 rounded-xl border border-gray-300 shadow-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* -------- SEARCH -------- */}
+      <input
+        className="w-full max-w-md mx-auto block p-3 rounded-xl border shadow-sm"
+        placeholder="Search medicine..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      {/* -------- MEDICINES GRID -------- */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {filteredMedicines.map((m, i) => (
+          <div
+            key={i}
+            onClick={() => toggleSelectMedicine(m.name)}
+            className={`bg-white p-6 rounded-xl shadow-sm cursor-pointer transition hover:shadow-lg ${
+              selectedMedicines.includes(m.name) ? "ring-4 ring-teal-500" : ""
+            }`}
+          >
+            <h3 className="font-bold text-teal-700">{m.name}</h3>
+            <p className="text-sm text-gray-500">{m.dosage}</p>
+            <p className="text-sm mt-2">{m.steps}</p>
+          </div>
+        ))}
       </div>
 
-      {/* MEDICINE LIST */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {filteredMedicines.length > 0 ? (
-          filteredMedicines.map((medicine, index) => {
-            const selected = selectedMedicines.includes(medicine.name);
-            return (
-              <div
-                key={index}
-                onClick={() => toggleSelectMedicine(medicine.name)}
-                className={`cursor-pointer bg-white shadow-md rounded-xl p-4 sm:p-6 flex flex-col justify-between hover:shadow-2xl h-full transition-all ${
-                  selected ? "ring-4 ring-teal-500" : ""
-                }`}
-              >
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700">
-                  {medicine.name}
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-500 mt-2">
-                  {medicine.dosage}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-700 mt-3">
-                  {medicine.steps}
-                </p>
-              </div>
-            );
-          })
-        ) : (
-          <p className="col-span-full text-center text-gray-500">
-            No medicines found.
-          </p>
-        )}
-      </div>
-
-      {/* ✅ Submit Selected Medicines */}
+      {/* -------- SUBMIT -------- */}
       {selectedMedicines.length > 0 && (
-        <div className="mt-6 text-center">
-          <p className="text-gray-700 mb-3">
-            Selected Medicines:{" "}
-            <span className="font-semibold text-teal-700">
-              {selectedMedicines.join(", ")}
-            </span>
+        <div className="text-center">
+          <p className="mb-2 text-gray-700">
+            Selected: <strong>{selectedMedicines.join(", ")}</strong>
           </p>
           <button
             onClick={handleManualSubmit}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg"
           >
             Submit Selected Medicines
           </button>
         </div>
       )}
 
-      {/* CONFIRMATION SECTION */}
+      {/* -------- CONFIRMATION SECTION -------- */}
       <div className="mt-10 max-w-3xl mx-auto">
-  <h2 className="text-xl font-semibold mb-3">
-    Prescription Confirmations
-  </h2>
+        <h2 className="text-xl font-semibold mb-3">
+          Prescription Confirmations
+        </h2>
 
-  {prescriptions.length === 0 && <p>No prescriptions found.</p>}
+        {prescriptions.length === 0 && (
+          <p className="text-gray-600">No prescriptions found.</p>
+        )}
 
-  {prescriptions.map((p) =>
-    p.confirmation ? (
-      <div key={p._id} className="bg-green-100 p-4 rounded mb-4">
-        <p>
-          <strong>Status:</strong> Confirmed
-        </p>
+        {prescriptions.map((p) =>
+          p.confirmation ? (
+            <div
+              key={p._id}
+              className="bg-green-100 p-4 rounded mb-4 shadow-sm"
+            >
+              <p>
+                <strong>Status:</strong> Confirmed
+              </p>
 
-        {p.confirmation.allPresent ? (
-          <p>
-            <strong>All Medicines Present:</strong> Yes
-          </p>
-        ) : (
-          <>
-            <p>
-              <strong>All Medicines Present:</strong> No
-            </p>
+              {p.confirmation.allPresent ? (
+                <p>
+                  <strong>All Medicines Present:</strong> Yes
+                </p>
+              ) : (
+                <>
+                  <p>
+                    <strong>All Medicines Present:</strong> No
+                  </p>
 
-            {p.confirmation.medicines &&
-              p.confirmation.medicines.length > 0 && (
-                <ul className="list-disc list-inside ml-4">
-                  {p.confirmation.medicines.map((m, idx) => (
-                    <li key={idx}>{m}</li>
-                  ))}
-                </ul>
+                  {p.confirmation.medicines &&
+                    p.confirmation.medicines.length > 0 && (
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {p.confirmation.medicines.map((m, idx) => (
+                          <li key={idx}>{m}</li>
+                        ))}
+                      </ul>
+                    )}
+                </>
               )}
-          </>
+            </div>
+          ) : null
         )}
       </div>
-    ) : null
-  )}
-</div>
-
-    </div>
+    </main>
   );
 };
 
