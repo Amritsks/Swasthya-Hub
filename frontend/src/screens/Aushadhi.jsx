@@ -141,7 +141,7 @@ const Aushadhi = () => {
       </div>
 
       {/* -------- UPLOAD -------- */}
-      <div className="bg-white p-6 rounded-xl shadow-sm flex flex-col sm:flex-row gap-4 justify-between items-center">
+      <div className="bg-white p-6 rounded-xl shadow-sm flex flex-col sm:flex-row gap-4 justify-between items-center mt-2">
         <label className="cursor-pointer border rounded px-4 py-2 bg-slate-50 hover:bg-slate-100">
           {prescription ? prescription.name : "Select Prescription"}
           <input type="file" className="hidden" onChange={handleFileChange} />
