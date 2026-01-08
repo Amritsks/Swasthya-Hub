@@ -23,12 +23,15 @@ import PharmacyAdmin from "./screens/PharmacyAdmin";
 import PharmacistLogin from "./screens/PharmacistLogin";
 import AdminLogin from "./screens/AdminLogin";
 import AdminDashboard from "./screens/AdminDashboard";
+import NotFound from "./screens/NotFound";
 
 import { useAuth } from "./context/AuthContext";
 
 const App = () => {
-  const { user, role } = useAuth(); // ✅ single source of truth
-
+  const { user, role, loading } = useAuth(); // ✅ single source of truth
+if (loading) {
+  return null; // or a spinner
+}
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
@@ -120,7 +123,7 @@ const App = () => {
             />
 
             {/* ---------- FALLBACK ---------- */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>

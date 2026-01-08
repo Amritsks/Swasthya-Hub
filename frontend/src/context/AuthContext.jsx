@@ -5,6 +5,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState("guest"); // guest | user | pharmacist | admin
+  const [loading, setLoading] = useState(true);
 
   // 🔄 Restore auth on refresh
   useEffect(() => {
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }) => {
         setRole("user");
       }
     }
+    setLoading(false);
   }, []);
 
   const loginUser = (userData, token) => {
@@ -50,6 +52,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         role,
+        loading,
         loginUser,
         loginPharmacist,
         loginAdmin,

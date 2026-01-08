@@ -45,11 +45,13 @@ eslint.config.js
 index.html
 package.json
 postcss.config.cjs
+public/robots.txt
 public/vite.svg
 src/App.jsx
 src/assets/react.svg
 src/components/Navbar.jsx
 src/components/phoneMockup.jsx
+src/components/UserSidebar.jsx
 src/context/AuthContext.jsx
 src/hooks/useSocket.js
 src/index.css
@@ -144,6 +146,7 @@ export default defineConfig([
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SvasthyaHub</title>
+    <meta name="robots" content="noindex, nofollow" />
   </head>
   <body>
     <div id="root"></div>
@@ -167,6 +170,7 @@ export default defineConfig([
   "dependencies": {
     "axios": "^1.12.2",
     "dotenv": "^17.2.3",
+    "framer-motion": "^10.18.0",
     "lucide-react": "^0.544.0",
     "react": "^18.3.1",
     "react-confetti": "^6.4.0",
@@ -202,6 +206,11 @@ module.exports = {
 };
 </file>
 
+<file path="public/robots.txt">
+User-agent: *
+Disallow:
+</file>
+
 <file path="public/vite.svg">
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="31.88" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 257"><defs><linearGradient id="IconifyId1813088fe1fbc01fb466" x1="-.828%" x2="57.636%" y1="7.652%" y2="78.411%"><stop offset="0%" stop-color="#41D1FF"></stop><stop offset="100%" stop-color="#BD34FE"></stop></linearGradient><linearGradient id="IconifyId1813088fe1fbc01fb467" x1="43.376%" x2="50.316%" y1="2.242%" y2="89.03%"><stop offset="0%" stop-color="#FFEA83"></stop><stop offset="8.333%" stop-color="#FFDD35"></stop><stop offset="100%" stop-color="#FFA800"></stop></linearGradient></defs><path fill="url(#IconifyId1813088fe1fbc01fb466)" d="M255.153 37.938L134.897 252.976c-2.483 4.44-8.862 4.466-11.382.048L.875 37.958c-2.746-4.814 1.371-10.646 6.827-9.67l120.385 21.517a6.537 6.537 0 0 0 2.322-.004l117.867-21.483c5.438-.991 9.574 4.796 6.877 9.62Z"></path><path fill="url(#IconifyId1813088fe1fbc01fb467)" d="M185.432.063L96.44 17.501a3.268 3.268 0 0 0-2.634 3.014l-5.474 92.456a3.268 3.268 0 0 0 3.997 3.378l24.777-5.718c2.318-.535 4.413 1.507 3.936 3.838l-7.361 36.047c-.495 2.426 1.782 4.5 4.151 3.78l15.304-4.649c2.372-.72 4.652 1.36 4.15 3.788l-11.698 56.621c-.732 3.542 3.979 5.473 5.943 2.437l1.313-2.028l72.516-144.72c1.215-2.423-.88-5.186-3.54-4.672l-25.505 4.922c-2.396.462-4.435-1.77-3.759-4.114l16.646-57.705c.677-2.35-1.37-4.583-3.769-4.113Z"></path></svg>
 </file>
@@ -216,6 +225,7 @@ import {
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import UserSidebar from "./components/UserSidebar";
 
 import Dashboard from "./screens/Dashboard";
 import UserDashboard from "./screens/UserDashboard";
@@ -240,89 +250,97 @@ const App = () => {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-        {/* Navbar always visible */}
+        {/* Top Navbar (mobile + desktop header) */}
         <Navbar />
 
-        <Routes>
-          {/* ---------- HOME ---------- */}
-          <Route
-            path="/"
-            element={
-              role === "admin" ? (
-                <Navigate to="/admin/dashboard" replace />
-              ) : role === "pharmacist" ? (
-                <Navigate to="/pharmacy-admin" replace />
-              ) : role === "user" ? (
-                <Navigate to="/userdashboard" replace />
-              ) : (
-                <Dashboard />
-              )
-            }
-          />
+        {/* ✅ Sidebar ONLY for USER on md+ */}
+        {role === "user" && (
+          <UserSidebar userName={user?.name || "User"} />
+        )}
 
-          {/* ---------- PUBLIC ---------- */}
-          <Route
-            path="/login"
-            element={role === "guest" ? <Login /> : <Navigate to="/" replace />}
-          />
+        {/* Main Content */}
+        <main className={role === "user" ? "md:ml-64 pt-16" : "pt-16"}>
+          <Routes>
+            {/* ---------- HOME ---------- */}
+            <Route
+              path="/"
+              element={
+                role === "admin" ? (
+                  <Navigate to="/admin/dashboard" replace />
+                ) : role === "pharmacist" ? (
+                  <Navigate to="/pharmacy-admin" replace />
+                ) : role === "user" ? (
+                  <Navigate to="/userdashboard" replace />
+                ) : (
+                  <Dashboard />
+                )
+              }
+            />
 
-          {/* ---------- USER ---------- */}
-          <Route
-            path="/userdashboard"
-            element={role === "user" ? <UserDashboard /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/profile"
-            element={role === "user" ? <Profile /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/suraksha"
-            element={role === "user" ? <Suraksha /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/raksha"
-            element={role === "user" ? <Raksha /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/aushadhi"
-            element={role === "user" ? <Aushadhi /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/doctor"
-            element={role === "user" ? <Doctor /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/labtest"
-            element={role === "user" ? <Labtest /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/healthassist"
-            element={role === "user" ? <Healthassist /> : <Navigate to="/login" replace />}
-          />
+            {/* ---------- PUBLIC ---------- */}
+            <Route
+              path="/login"
+              element={role === "guest" ? <Login /> : <Navigate to="/" replace />}
+            />
 
-          {/* ---------- PHARMACIST ---------- */}
-          <Route
-            path="/pharmacist-login"
-            element={role === "guest" ? <PharmacistLogin /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/pharmacy-admin"
-            element={role === "pharmacist" ? <PharmacyAdmin /> : <Navigate to="/pharmacist-login" replace />}
-          />
+            {/* ---------- USER ---------- */}
+            <Route
+              path="/userdashboard"
+              element={role === "user" ? <UserDashboard /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/profile"
+              element={role === "user" ? <Profile /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/suraksha"
+              element={role === "user" ? <Suraksha /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/raksha"
+              element={role === "user" ? <Raksha /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/aushadhi"
+              element={role === "user" ? <Aushadhi /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/doctor"
+              element={role === "user" ? <Doctor /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/labtest"
+              element={role === "user" ? <Labtest /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/healthassist"
+              element={role === "user" ? <Healthassist /> : <Navigate to="/login" replace />}
+            />
 
-          {/* ---------- ADMIN ---------- */}
-          <Route
-            path="/admin/login"
-            element={role === "guest" ? <AdminLogin /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/admin/dashboard"
-            element={role === "admin" ? <AdminDashboard /> : <Navigate to="/admin/login" replace />}
-          />
+            {/* ---------- PHARMACIST ---------- */}
+            <Route
+              path="/pharmacist-login"
+              element={role === "guest" ? <PharmacistLogin /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/pharmacy-admin"
+              element={role === "pharmacist" ? <PharmacyAdmin /> : <Navigate to="/pharmacist-login" replace />}
+            />
 
-          {/* ---------- FALLBACK ---------- */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* ---------- ADMIN ---------- */}
+            <Route
+              path="/admin/login"
+              element={role === "guest" ? <AdminLogin /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/admin/dashboard"
+              element={role === "admin" ? <AdminDashboard /> : <Navigate to="/admin/login" replace />}
+            />
+
+            {/* ---------- FALLBACK ---------- */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
       </div>
     </Router>
   );
@@ -336,118 +354,163 @@ export default App;
 </file>
 
 <file path="src/components/Navbar.jsx">
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useEffect} from "react";
-
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, pharmacist, admin,logout } = useAuth();
-  const [isDesktop, setIsDesktop] = useState(false);
+  const { user, pharmacist, admin, logout } = useAuth();
+  const menuRef = useRef(null);
 
   const isAdmin = !!localStorage.getItem("adminToken");
   const isPharmacist = !!localStorage.getItem("pharmacistToken");
 
   const handleLogout = () => {
     logout?.();
-
-    navigate("/", { replace: true }); 
+    navigate("/", { replace: true });
   };
+
+  // Close menu when clicking outside (mobile only)
   useEffect(() => {
-  const checkScreen = () => {
-    setIsDesktop(window.innerWidth >= 768); 
-  };
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
 
-  checkScreen();
-  window.addEventListener("resize", checkScreen);
-  return () => window.removeEventListener("resize", checkScreen);
-}, []);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
 
-  // Common links based on role
-  const guestLinks = (
-    <Link to="/login" className="font-semibold block py-2">
-      Login
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  /* ---------------- LINKS ---------------- */
+ const guestLinks = (
+  <div className="flex flex-col gap-3">
+    <Link to="/" className="hover:text-teal-700">
+      Dashboard
     </Link>
-  );
+
+    <div className="border-t pt-2">
+      <p className="text-sm font-semibold text-gray-600 mb-1">Login as:</p>
+
+      <div className="flex flex-col gap-1 pl-2">
+        <Link
+          to="/login"
+          className="block text-sm hover:text-teal-700"
+        >
+          User
+        </Link>
+
+        <Link
+          to="/admin/login"
+          className="block text-sm hover:text-teal-700"
+        >
+          Admin
+        </Link>
+
+        <Link
+          to="/pharmacist-login"
+          className="block text-sm hover:text-teal-700"
+        >
+          Pharmacist
+        </Link>
+      </div>
+    </div>
+  </div>
+);
+
 
   const userLinks = (
-    <>
-      <Link to="/userdashboard" className="block py-2">
-        Dashboard
-      </Link>
-      <Link to="/profile" className="block py-2">
-        Profile
-      </Link>
-      <Link to="/aushadhi" className="block py-2">
-        Aushadhi
-      </Link>
-      <Link to="/suraksha" className="block py-2">
-        Suraksha
-      </Link>
-      <Link to="/raksha" className="block py-2">
-        Raksha
-      </Link>
-      <button onClick={handleLogout} className="block py-2 text-left">
-        Logout
-      </button>
-    </>
-  );
+  <div className="flex flex-col gap-2">
+    <Link to="/userdashboard" className="block py-2 hover:text-teal-700">
+      Dashboard
+    </Link>
+
+    <Link to="/profile" className="block py-2 hover:text-teal-700">
+      Profile
+    </Link>
+
+    <Link to="/aushadhi" className="block py-2 hover:text-teal-700">
+      Aushadhi
+    </Link>
+
+    <Link to="/suraksha" className="block py-2 hover:text-teal-700">
+      Suraksha
+    </Link>
+
+    <Link to="/raksha" className="block py-2 hover:text-teal-700">
+      Raksha
+    </Link>
+
+    <button
+      onClick={handleLogout}
+      className="block py-2 text-left hover:text-red-600"
+    >
+      Logout
+    </button>
+  </div>
+);
+
 
   const pharmacistLinks = (
-    <>
-      {pharmacist && <Link to="/pharmacy-admin">Pharmacy Dashboard</Link>}
+  <div className="flex flex-col gap-2">
+    {/* {pharmacist && (
+      <Link
+        to="/pharmacy-admin"
+        className="block py-2 hover:text-teal-700"
+      >
+        Pharmacy Dashboard
+      </Link>
+    )} */}
 
-      <button onClick={handleLogout} className="block py-2 text-left">
-        Logout
-      </button>
-    </>
-  );
+    <button
+      onClick={handleLogout}
+      className="block py-2 text-left hover:text-red-600"
+    >
+      Logout
+    </button>
+  </div>
+);
+
 
   const adminLinks = (
     <>
-      {admin && <Link to="/admin/dashboard">Admin Dashboard</Link>}
-      <button onClick={handleLogout} className="block py-2 text-left">
-        Logout
-      </button>
+      {/* <Link to="/admin/dashboard">Admin Dashboard</Link> */}
+      <button onClick={handleLogout}>Logout</button>
     </>
   );
 
   return (
-    <nav className="bg-gray-300 p-4 shadow-md">
-  <div className="max-w-7xl mx-auto flex justify-between items-center">
-    <Link to="/" className="text-xl font-bold">
-      Svasthya Hub
-    </Link>
+    <nav className="h-16 bg-white p-4 shadow-md fixed top-0 left-0 right-0 z-50">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        {/* LOGO (always visible) */}
+        <Link to="/" className="text-xl font-bold">
+          SvasthyaHub
+        </Link>
 
-    {/* Menu Icon */}
-    <div
-      className="relative"
-      onMouseEnter={isDesktop ? () => setIsOpen(true) : undefined}
-      onMouseLeave={isDesktop ? () => setIsOpen(false) : undefined}
-    >
-      <button
-        onClick={!isDesktop ? () => setIsOpen(!isOpen) : undefined}
-      >
-        {isOpen ? <X /> : <Menu />}
-      </button>
+        {/* MENU ICON — MOBILE ONLY */}
+        <div ref={menuRef} className={`relative ${user ? "md:hidden" : ""}`}>
+          <button onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X /> : <Menu />}
+          </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-teal-100 rounded shadow-lg p-4 z-50">
-          {!user && !isAdmin && !isPharmacist && guestLinks}
-          {user && userLinks}
-          {isPharmacist && pharmacistLinks}
-          {isAdmin && adminLinks}
+          {/* DROPDOWN */}
+          {isOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded shadow-lg p-4 z-50">
+              {!user && !isAdmin && !isPharmacist && guestLinks}
+              {user && userLinks}
+              {isPharmacist && pharmacistLinks}
+              {isAdmin && adminLinks}
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  </div>
-</nav>
-
+      </div>
+    </nav>
   );
 };
 
@@ -466,6 +529,122 @@ const PhoneMockup = ({ children }) => {
 };
 
 export default PhoneMockup;
+</file>
+
+<file path="src/components/UserSidebar.jsx">
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
+/* ---------------- ICON COMPONENT ---------------- */
+const Icon = ({ children, className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    {children}
+  </svg>
+);
+
+const Icons = {
+  Home: () => (
+    <Icon className="w-5 h-5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </Icon>
+  ),
+  Truck: () => (
+    <Icon className="w-5 h-5">
+      <rect x="1" y="3" width="15" height="13" />
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </Icon>
+  ),
+  Box: () => (
+    <Icon className="w-5 h-5">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4" />
+    </Icon>
+  ),
+  Drop: () => (
+    <Icon className="w-5 h-5">
+      <path d="M12 2.69l5.74 5.74c2.58 2.58 2.58 6.76 0 9.34a6.6 6.6 0 0 1-9.34 0c-2.58-2.58-2.58-6.76 0-9.34L12 2.69z" />
+    </Icon>
+  ),
+  Image: () => (
+    <Icon className="w-5 h-5">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </Icon>
+  ),
+  Logout: () => (
+    <Icon className="w-5 h-5">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </Icon>
+  ),
+};
+
+const UserSidebar = ({ userName }) => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout?.();
+    navigate("/", { replace: true });
+  };
+
+  return (
+    <aside className="hidden md:fixed md:flex left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-slate-200 z-20 flex-col">
+      {/* NAV LINKS */}
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <Link to="/userdashboard" className="sidebar-link active">
+          <Icons.Home /> Home
+        </Link>
+
+        <Link to="/orders" className="sidebar-link">
+          <Icons.Truck /> My Orders
+        </Link>
+
+        <Link to="/aushadhi" className="sidebar-link">
+          <Icons.Box /> Order Medicines
+        </Link>
+
+        <Link to="/raksha" className="sidebar-link">
+          <Icons.Drop /> Blood Corner
+        </Link>
+
+        <Link to="/aushadhi" className="sidebar-link">
+          <Icons.Image /> Upload Prescription
+        </Link>
+      </nav>
+
+      {/* USER INFO */}
+      <div className="p-4 border-t">
+        <Link to="/profile">
+          <p className="font-bold text-slate-700">{userName}</p>
+          <p className="text-xs text-teal-600">Plus Member</p>
+        </Link>
+      </div>
+
+      {/* LOGOUT BUTTON */}
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-2 m-4 px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
+      >
+        <Icons.Logout /> Logout
+      </button>
+    </aside>
+  );
+};
+
+export default UserSidebar;
 </file>
 
 <file path="src/context/AuthContext.jsx">
@@ -604,27 +783,38 @@ export default function useSocket(userId) {
 .nav-item:hover {
   background-color: rgba(13, 148, 136, 0.2);
 } */
+.sidebar-link {
+  @apply w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition;
+}
+
+.sidebar-link.active {
+  @apply bg-slate-900 text-white;
+}
+html,
+body {
+  overflow-x: hidden;
+}
 </file>
 
 <file path="src/layout/Layout.jsx">
-// import { Outlet } from "react-router-dom";
-// import Navbar from "../components/Navbar";
+import { Outlet } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
-// const Layout = () => {
-//   return (
-//     <div className="flex">
-//       {/* Sidebar */}
-//       <Navbar />
+const Layout = () => {
+  return (
+    <div className="flex">
+      {/* Sidebar */}
+      <Navbar />
 
-//       {/* Page Content */}
-//       <main className="ml-16 hover:ml-64 transition-all duration-300 w-full p-4">
-//         <Outlet />
-//       </main>
-//     </div>
-//   );
-// };
+      {/* Page Content */}
+      <main className="ml-16 hover:ml-64 transition-all duration-300 w-full p-4">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
 
-// export default Layout;
+export default Layout;
 </file>
 
 <file path="src/main.jsx">
@@ -647,11 +837,14 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 <file path="src/screens/AdminDashboard.jsx">
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [pharmacists, setPharmacists] = useState([]);
+  const [showAdminPassword, setShowAdminPassword] = useState(true);
+  const [showPharmacistPassword, setShowPharmacistPassword] = useState(true);
 
   const [newAdmin, setNewAdmin] = useState({ email: "", password: "" });
   const [newPharmacist, setNewPharmacist] = useState({
@@ -698,7 +891,6 @@ export default function AdminDashboard() {
     }
   };
 
- 
   // 🔐 Create Admin (NO TOKEN REQUIRED)
   const createAdmin = async (e) => {
     e.preventDefault();
@@ -740,100 +932,196 @@ export default function AdminDashboard() {
       alert(err.response?.data?.message || "Failed to create pharmacist");
     }
   };
+  // ❌ Delete Pharmacist
+  const deletePharmacist = async (id) => {
+    const token = localStorage.getItem("adminToken");
+
+    if (!window.confirm("Are you sure you want to delete this pharmacist?")) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      alert("Pharmacist deleted");
+      fetchAll();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete pharmacist");
+    }
+  };
 
   return (
-  <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
-    <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">
-      Admin Dashboard
-    </h1>
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#0f172a] text-white min-h-screen">
+      <h1 className="text-2xl text-white sm:text-3xl font-bold mb-6 sm:mb-8">
+        Admin Dashboard
+      </h1>
 
-    {/* 📊 Summary */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10">
-      <StatCard title="Users" count={users.length} />
-      <StatCard title="Blood Requests" count={requests.length} />
-      <StatCard title="Pharmacists" count={pharmacists.length} />
+      {/* 📊 Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10 ">
+        <StatCard title="Users" count={users.length} />
+        <StatCard title="Blood Requests" count={requests.length} />
+        <StatCard title="Pharmacists" count={pharmacists.length} />
+      </div>
+
+      {/* ➕ Create Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
+        <FormCard title="Create Admin" onSubmit={createAdmin}>
+          <Input
+            placeholder="Email"
+            value={newAdmin.email}
+            onChange={(e) =>
+              setNewAdmin({ ...newAdmin, email: e.target.value })
+            }
+          />
+
+          <div className="relative">
+            <Input
+              placeholder="Password"
+              value={newAdmin.password}
+              type={showAdminPassword ? "password" : "text"}
+              onChange={(e) =>
+                setNewAdmin({ ...newAdmin, password: e.target.value })
+              }
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowAdminPassword((p) => !p)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white"
+            >
+              {showAdminPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </FormCard>
+
+        <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
+          <Input
+            placeholder="Name"
+            value={newPharmacist.name}
+            onChange={(e) =>
+              setNewPharmacist({ ...newPharmacist, name: e.target.value })
+            }
+          />
+
+          <Input
+            placeholder="Email"
+            value={newPharmacist.email}
+            onChange={(e) =>
+              setNewPharmacist({ ...newPharmacist, email: e.target.value })
+            }
+          />
+
+          <div className="relative">
+            <Input
+              placeholder="Password"
+              type={showPharmacistPassword ? "password" : "text"}
+              value={newPharmacist.password}
+              onChange={(e) =>
+                setNewPharmacist({ ...newPharmacist, password: e.target.value })
+              }
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPharmacistPassword((p) => !p)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white"
+            >
+              {showPharmacistPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </FormCard>
+      </div>
+
+      {/* 📋 Tables */}
+      <ResponsiveTable
+        title="Registered Users"
+        headers={["Name", "Email", "Phone"]}
+        tableRows={users.map((u) => (
+          <tr key={u._id}>
+            <td className="p-3">{u.name}</td>
+            <td className="p-3">{u.email}</td>
+            <td className="p-3">{u.phone || "—"}</td>
+          </tr>
+        ))}
+        mobileCards={users.map((u) => (
+          <div
+            key={u._id}
+            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
+          >
+            <p className="font-semibold">{u.name}</p>
+            <p className="text-sm text-gray-600 break-all">{u.email}</p>
+            <p className="text-sm mt-1">📞 {u.phone || "—"}</p>
+          </div>
+        ))}
+      />
+
+      <ResponsiveTable
+        title="Blood Requests"
+        headers={["Email", "Blood Group", "Status"]}
+        tableRows={requests.map((r) => (
+          <tr key={r._id}>
+            <td className="p-3">{r.requester || "—"}</td>
+            <td className="p-3">{r.group}</td>
+            <td className="p-3">{r.status}</td>
+          </tr>
+        ))}
+        mobileCards={requests.map((r) => (
+          <div
+            key={r._id}
+            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
+          >
+            <p className="font-semibold">Email: {r.requester || "—"}</p>
+            <p className="font-semibold">Blood Group: {r.group}</p>
+            <p className="text-sm mt-1">Status: {r.status}</p>
+          </div>
+        ))}
+      />
+
+      <ResponsiveTable
+        title="Pharmacists"
+        headers={["Name", "Email", "Action"]}
+        tableRows={pharmacists.map((p) => (
+          <tr key={p._id}>
+            <td className="p-3">{p.name}</td>
+            <td className="p-3">{p.email}</td>
+            <td className="p-3">
+              <button
+                onClick={() => deletePharmacist(p._id)}
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        ))}
+        mobileCards={pharmacists.map((p) => (
+          <div
+            key={p._id}
+            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
+          >
+            <p className="font-semibold">{p.name}</p>
+            <p className="text-sm text-gray-600 break-all">{p.email}</p>
+            <button
+              onClick={() => deletePharmacist(p._id)}
+              className="mt-2 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      />
     </div>
-
-    {/* ➕ Create Section */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
-      <FormCard title="Create Admin" onSubmit={createAdmin}>
-        <Input
-          placeholder="Email"
-          value={newAdmin.email}
-          onChange={(e) =>
-            setNewAdmin({ ...newAdmin, email: e.target.value })
-          }
-        />
-        <Input
-          placeholder="Password"
-          type="password"
-          value={newAdmin.password}
-          onChange={(e) =>
-            setNewAdmin({ ...newAdmin, password: e.target.value })
-          }
-        />
-      </FormCard>
-
-      <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
-        <Input
-          placeholder="Name"
-          value={newPharmacist.name}
-          onChange={(e) =>
-            setNewPharmacist({ ...newPharmacist, name: e.target.value })
-          }
-        />
-        <Input
-          placeholder="Email"
-          value={newPharmacist.email}
-          onChange={(e) =>
-            setNewPharmacist({ ...newPharmacist, email: e.target.value })
-          }
-        />
-        <Input
-          placeholder="Password"
-          type="password"
-          value={newPharmacist.password}
-          onChange={(e) =>
-            setNewPharmacist({ ...newPharmacist, password: e.target.value })
-          }
-        />
-      </FormCard>
-    </div>
-
-    {/* 📋 Tables */}
-    <ResponsiveTable title="Registered Users" headers={["Name", "Email"]}>
-      {users.map((u) => (
-        <tr key={u._id}>
-          <td className="p-3">{u.name}</td>
-          <td className="p-3">{u.email}</td>
-        </tr>
-      ))}
-    </ResponsiveTable>
-
-    <ResponsiveTable title="Blood Requests" headers={["Blood Group", "Status"]}>
-      {requests.map((r) => (
-        <tr key={r._id}>
-          <td className="p-3">{r.group}</td>
-          <td className="p-3">{r.status}</td>
-        </tr>
-      ))}
-    </ResponsiveTable>
-
-    <ResponsiveTable title="Pharmacists" headers={["Name", "Email"]}>
-      {pharmacists.map((p) => (
-        <tr key={p._id}>
-          <td className="p-3">{p.name}</td>
-          <td className="p-3">{p.email}</td>
-        </tr>
-      ))}
-    </ResponsiveTable>
-  </div>
   );
 }
 
 /* ------------------ UI Components ------------------ */
 const StatCard = ({ title, count }) => (
-  <div className="bg-white p-4 sm:p-6 rounded-xl shadow">
+  <div className="bg-[#1e293b] text-white p-4 sm:p-6 rounded-xl shadow">
     <h3 className="text-gray-500 text-sm sm:text-base">{title}</h3>
     <p className="text-2xl sm:text-3xl font-bold">{count}</p>
   </div>
@@ -842,9 +1130,9 @@ const StatCard = ({ title, count }) => (
 const FormCard = ({ title, children, onSubmit }) => (
   <form
     onSubmit={onSubmit}
-    className="bg-white p-4 sm:p-6 rounded-xl shadow space-y-4"
+    className="bg-[#1e293b] text-white p-4 sm:p-6 rounded-xl shadow space-y-4"
   >
-    <h2 className="text-lg sm:text-xl font-semibold">{title}</h2>
+    <h2 className="text-lg sm:text-xl font-semibold ">{title}</h2>
     {children}
     <button className="w-full sm:w-auto bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 transition">
       Create
@@ -855,30 +1143,33 @@ const FormCard = ({ title, children, onSubmit }) => (
 const Input = (props) => (
   <input
     {...props}
-    className="border w-full p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+    className="border bg-[#1e293b] text-white w-full p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
     required
   />
 );
 
-const ResponsiveTable = ({ title, headers, children }) => (
-  <div className="bg-white rounded-xl shadow mb-8 sm:mb-10">
+const ResponsiveTable = ({ title, headers, tableRows, mobileCards }) => (
+  <div className="bg-[#1e293b] text-white rounded-xl shadow mb-8 sm:mb-10">
     <h2 className="text-lg sm:text-xl font-semibold p-4">{title}</h2>
-    <div className="overflow-x-auto">
+
+    {/* Desktop Table */}
+    <div className="hidden sm:block overflow-x-auto ">
       <table className="min-w-full border-t">
-        <thead className="bg-gray-200">
+        <thead className="bg-[#1e293b] text-white ">
           <tr>
             {headers.map((h) => (
-              <th key={h} className="text-left p-3 text-sm sm:text-base">
+              <th key={h} className="text-left p-3">
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y text-sm sm:text-base">
-          {children}
-        </tbody>
+        <tbody className="divide-y">{tableRows}</tbody>
       </table>
     </div>
+
+    {/* Mobile Cards */}
+    <div className="sm:hidden space-y-3 p-4">{mobileCards}</div>
   </div>
 );
 </file>
@@ -994,7 +1285,7 @@ const AIHealthAssist = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-gray-50 p-6">
+    <div className="min-h-screen p-6 bg-gray-100 relative">
       <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">
         AI <span className="text-green-600">Health Assist</span>
       </h1>
@@ -1047,39 +1338,35 @@ import useSocket from "../hooks/useSocket";
 
 const Aushadhi = () => {
   const { user } = useAuth();
-  const token = localStorage.getItem("token");
 
   const [prescription, setPrescription] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [prescriptions, setPrescriptions] = useState([]);
-  const [selectedMedicines, setSelectedMedicines] = useState([]); // ✅ new state
+  const [selectedMedicines, setSelectedMedicines] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Setup real-time socket connection for user notifications
   const socket = useSocket(user?.email);
 
-  // Fetch prescriptions on mount and whenever user changes
+  /* ---------------- FETCH PRESCRIPTIONS ---------------- */
   useEffect(() => {
-    if (!user || !user.token) return;
+    if (!user?.token) return;
+
     axios
       .get(`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${user.token}` },
       })
-      .then((res) => {
-        setPrescriptions(res.data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+      .then((res) => setPrescriptions(res.data))
+      .catch(console.error);
   }, [user]);
 
+  /* ---------------- SOCKET LISTENER ---------------- */
   useEffect(() => {
     if (!socket?.current) return;
 
-    const currentSocket = socket.current;
+    const s = socket.current;
 
-    currentSocket.on("prescriptionConfirmed", (data) => {
+    s.on("prescriptionConfirmed", (data) => {
       alert(data.message);
       setPrescriptions((prev) =>
         prev.map((p) =>
@@ -1097,22 +1384,17 @@ const Aushadhi = () => {
       );
     });
 
-    return () => {
-      if (currentSocket) {
-        currentSocket.off("prescriptionConfirmed");
-      }
-    };
-  }, [socket, user]);
+    return () => s.off("prescriptionConfirmed");
+  }, [socket]);
 
-  // Upload prescription file
+  /* ---------------- UPLOAD ---------------- */
   const handleFileChange = (e) => {
     setPrescription(e.target.files[0]);
     setUploadStatus("");
   };
 
   const handleUpload = async () => {
-    if (!prescription) return alert("Please select a prescription.");
-    if (!user) return alert("User not logged in.");
+    if (!prescription || !user) return;
 
     const formData = new FormData();
     formData.append("file", prescription);
@@ -1120,252 +1402,184 @@ const Aushadhi = () => {
     formData.append("userEmail", user.email);
 
     try {
-      setIsUploading(true); //  disable button
+      setIsUploading(true);
       setUploadStatus("Uploading...");
 
       await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`, //  important for prod
-          },
-        }
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
       setUploadStatus("Uploaded successfully!");
       setPrescription(null);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setUploadStatus("Upload failed.");
     } finally {
-      setIsUploading(false); // 🔓 enable button again
+      setIsUploading(false);
     }
   };
 
-  // Static medicines (for now)
+  /* ---------------- MEDICINES ---------------- */
   const medicines = [
     {
       name: "Paracetamol",
       dosage: "500mg",
-      steps: "Take 1 tablet every 6 hours after food",
+      steps: "Take 1 tablet every 6 hours",
     },
-    {
-      name: "Amoxicillin",
-      dosage: "250mg",
-      steps: "Take 1 capsule every 8 hours for 5 days",
-    },
-    {
-      name: "Vitamin C",
-      dosage: "500mg",
-      steps: "Take 1 tablet daily after breakfast",
-    },
-    {
-      name: "Vitamin D",
-      dosage: "400mg",
-      steps: "Take 1 tablet every 8 hours if pain persists",
-    },
-    {
-      name: "Combiflame",
-      dosage: "400mg",
-      steps: "Take 1 tablet every 8 hours if pain persists",
-    },
-    {
-      name: "Ciplox eye drops",
-      dosage: "Apply 2 drops",
-      steps: "Apply 2 drops twice daily",
-    },
+    { name: "Amoxicillin", dosage: "250mg", steps: "Every 8 hours for 5 days" },
+    { name: "Vitamin C", dosage: "500mg", steps: "Once daily" },
+    { name: "Vitamin D", dosage: "400mg", steps: "If pain persists" },
+    { name: "Combiflame", dosage: "400mg", steps: "If pain persists" },
+    { name: "Ciplox Eye Drops", dosage: "2 drops", steps: "Twice daily" },
   ];
 
-  const filteredMedicines = medicines.filter((medicine) =>
-    medicine.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMedicines = medicines.filter((m) =>
+    m.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // ✅ Handle selecting medicine
-  const toggleSelectMedicine = (medicineName) => {
+  const toggleSelectMedicine = (name) => {
     setSelectedMedicines((prev) =>
-      prev.includes(medicineName)
-        ? prev.filter((m) => m !== medicineName)
-        : [...prev, medicineName]
+      prev.includes(name) ? prev.filter((m) => m !== name) : [...prev, name]
     );
   };
 
-  // ✅ Handle submitting selected medicines
   const handleManualSubmit = async () => {
-    if (selectedMedicines.length === 0) {
-      return alert("Please select at least one medicine.");
-    }
+    if (!selectedMedicines.length) return alert("Select medicines");
 
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/manual`,
-        {
-          medicines: selectedMedicines,
-          userEmail: user.email,
-          userName: user.name,
-        },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
-      );
-      console.log("🔑 Current user token:", user?.token);
-      alert("✅ Medicine request submitted successfully!");
-      setSelectedMedicines([]);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to submit manual request.");
-    }
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/manual`,
+      {
+        medicines: selectedMedicines,
+        userEmail: user.email,
+        userName: user.name,
+      },
+      { headers: { Authorization: `Bearer ${user.token}` } }
+    );
+
+    alert("✅ Medicine request submitted");
+    setSelectedMedicines([]);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-50 px-2 py-4 sm:px-6 md:px-10 lg:px-20 overflow-y-auto">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3 sm:gap-0">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 text-center flex-1 break-words">
-          Svasthya <span className="text-teal-600">Aushadhi</span>
+    <main className="min-h-screen p-6 bg-gray-100 relative">
+      {/* -------- HEADER -------- */}
+      <div className="bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl p-6 sm:p-8 text-white">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+          Svasthya <span className="text-teal-100">Aushadhi</span>
         </h1>
-
-        {/* Upload Section */}
-        <div className="flex flex-col sm:flex-row items-center gap-2">
-          <label
-            htmlFor="prescription-upload"
-            className="cursor-pointer bg-white border border-gray-300 rounded px-4 py-2 shadow-sm hover:bg-gray-100"
-          >
-            {prescription ? prescription.name : "Select Prescription"}
-            <input
-              id="prescription-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </label>
-          <button
-            onClick={handleUpload}
-            disabled={!prescription || isUploading}
-            className={`bg-teal-500 text-white px-3 py-1 rounded 
-    ${isUploading ? "opacity-50 cursor-not-allowed" : "hover:bg-teal-600"}
-  `}
-          >
-            {isUploading ? "Uploading..." : "Upload"}
-          </button>
-        </div>
+        <p className="text-teal-100 mt-1">
+          Upload prescriptions or request medicines manually
+        </p>
       </div>
 
-      {/* Upload Status */}
-      {uploadStatus && (
-        <p
-          className={`text-center mb-4 font-semibold ${
-            uploadStatus.includes("success") ? "text-green-600" : "text-red-600"
-          }`}
+      {/* -------- UPLOAD -------- */}
+      <div className="bg-white p-6 rounded-xl shadow-sm flex flex-col sm:flex-row gap-4 justify-between items-center mt-2">
+        <label className="cursor-pointer border rounded px-4 py-2 bg-slate-50 hover:bg-slate-100">
+          {prescription ? prescription.name : "Select Prescription"}
+          <input type="file" className="hidden" onChange={handleFileChange} />
+        </label>
+
+        <button
+          onClick={handleUpload}
+          disabled={!prescription || isUploading}
+          className="bg-teal-600 text-white px-6 py-2 rounded-lg disabled:opacity-50"
         >
+          {isUploading ? "Uploading..." : "Upload"}
+        </button>
+      </div>
+
+      {uploadStatus && (
+        <p className="text-center font-semibold text-teal-600">
           {uploadStatus}
         </p>
       )}
 
-      {/* SEARCH BAR */}
-      <div className="mb-6 max-w-lg mx-auto">
-        <input
-          type="text"
-          aria-label="Search medicine"
-          placeholder="Search medicine..."
-          className="w-full p-3 rounded-xl border border-gray-300 shadow-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* -------- SEARCH -------- */}
+      <input
+        className="w-full max-w-md mx-auto block p-3 m-3 rounded-xl border shadow-sm"
+        placeholder="Search medicine..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      {/* -------- MEDICINES GRID -------- */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {filteredMedicines.map((m, i) => (
+          <div
+            key={i}
+            onClick={() => toggleSelectMedicine(m.name)}
+            className={`bg-white p-6 rounded-xl shadow-sm cursor-pointer transition hover:shadow-lg ${
+              selectedMedicines.includes(m.name) ? "ring-4 ring-teal-500" : ""
+            }`}
+          >
+            <h3 className="font-bold text-teal-700">{m.name}</h3>
+            <p className="text-sm text-gray-500">{m.dosage}</p>
+            <p className="text-sm mt-2">{m.steps}</p>
+          </div>
+        ))}
       </div>
 
-      {/* MEDICINE LIST */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {filteredMedicines.length > 0 ? (
-          filteredMedicines.map((medicine, index) => {
-            const selected = selectedMedicines.includes(medicine.name);
-            return (
-              <div
-                key={index}
-                onClick={() => toggleSelectMedicine(medicine.name)}
-                className={`cursor-pointer bg-white shadow-md rounded-xl p-4 sm:p-6 flex flex-col justify-between hover:shadow-2xl h-full transition-all ${
-                  selected ? "ring-4 ring-teal-500" : ""
-                }`}
-              >
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-teal-700">
-                  {medicine.name}
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-500 mt-2">
-                  {medicine.dosage}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-700 mt-3">
-                  {medicine.steps}
-                </p>
-              </div>
-            );
-          })
-        ) : (
-          <p className="col-span-full text-center text-gray-500">
-            No medicines found.
-          </p>
-        )}
-      </div>
-
-      {/* ✅ Submit Selected Medicines */}
+      {/* -------- SUBMIT -------- */}
       {selectedMedicines.length > 0 && (
-        <div className="mt-6 text-center">
-          <p className="text-gray-700 mb-3">
-            Selected Medicines:{" "}
-            <span className="font-semibold text-teal-700">
-              {selectedMedicines.join(", ")}
-            </span>
+        <div className="text-center">
+          <p className="mb-2 text-gray-700">
+            Selected: <strong>{selectedMedicines.join(", ")}</strong>
           </p>
           <button
             onClick={handleManualSubmit}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg"
           >
             Submit Selected Medicines
           </button>
         </div>
       )}
 
-      {/* CONFIRMATION SECTION */}
+      {/* -------- CONFIRMATION SECTION -------- */}
       <div className="mt-10 max-w-3xl mx-auto">
-  <h2 className="text-xl font-semibold mb-3">
-    Prescription Confirmations
-  </h2>
+        <h2 className="text-xl font-semibold mb-3">
+          Prescription Confirmations
+        </h2>
 
-  {prescriptions.length === 0 && <p>No prescriptions found.</p>}
+        {prescriptions.length === 0 && (
+          <p className="text-gray-600">No prescriptions found.</p>
+        )}
 
-  {prescriptions.map((p) =>
-    p.confirmation ? (
-      <div key={p._id} className="bg-green-100 p-4 rounded mb-4">
-        <p>
-          <strong>Status:</strong> Confirmed
-        </p>
+        {prescriptions.map((p) =>
+          p.confirmation ? (
+            <div
+              key={p._id}
+              className="bg-green-100 p-4 rounded mb-4 shadow-sm"
+            >
+              <p>
+                <strong>Status:</strong> Confirmed
+              </p>
 
-        {p.confirmation.allPresent ? (
-          <p>
-            <strong>All Medicines Present:</strong> Yes
-          </p>
-        ) : (
-          <>
-            <p>
-              <strong>All Medicines Present:</strong> No
-            </p>
+              {p.confirmation.allPresent ? (
+                <p>
+                  <strong>All Medicines Present:</strong> Yes
+                </p>
+              ) : (
+                <>
+                  <p>
+                    <strong>All Medicines Present:</strong> No
+                  </p>
 
-            {p.confirmation.medicines &&
-              p.confirmation.medicines.length > 0 && (
-                <ul className="list-disc list-inside ml-4">
-                  {p.confirmation.medicines.map((m, idx) => (
-                    <li key={idx}>{m}</li>
-                  ))}
-                </ul>
+                  {p.confirmation.medicines &&
+                    p.confirmation.medicines.length > 0 && (
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {p.confirmation.medicines.map((m, idx) => (
+                          <li key={idx}>{m}</li>
+                        ))}
+                      </ul>
+                    )}
+                </>
               )}
-          </>
+            </div>
+          ) : null
         )}
       </div>
-    ) : null
-  )}
-</div>
-
-    </div>
+    </main>
   );
 };
 
@@ -1599,7 +1813,7 @@ import {
   Heart,
   Mail,
   Phone,
-  MapPin
+  MapPin,
 } from "lucide-react";
 
 /* ================= CONTENT ================= */
@@ -1610,9 +1824,9 @@ const content = {
     title: "Expert PharmD Care for Superior Patient Outcomes",
     description:
       "Experience the difference of a healthcare platform built on PharmD principles. We bridge the gap between diagnosis and recovery with precise medication therapy management and dedicated patient advocacy.",
-    ctaPrimary: "Consult a PharmD",
+    ctaPrimary: <a href="/login">Consult a PharmD</a>,
     ctaSecondary: "Our Care Model",
-    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e"
+    image: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e",
   },
   features: {
     title: "Advanced Clinical Care for Every Patient",
@@ -1622,24 +1836,22 @@ const content = {
       {
         title: "Patient-First Medication Review",
         description:
-          "Every prescription is clinically reviewed to prevent interactions."
+          "Every prescription is clinically reviewed to prevent interactions.",
       },
       {
         title: "Therapeutic Outcome Monitoring",
         description:
-          "Continuous tracking and optimization of therapy outcomes."
+          "Continuous tracking and optimization of therapy outcomes.",
       },
       {
         title: "Collaborative Care Ecosystem",
-        description:
-          "Pharmacists, doctors, and caregivers working together."
+        description: "Pharmacists, doctors, and caregivers working together.",
       },
       {
         title: "Donor Assurance Program",
-        description:
-          "Guaranteed priority access to blood units for donors."
-      }
-    ]
+        description: "Guaranteed priority access to blood units for donors.",
+      },
+    ],
   },
   about: {
     title: "Founded on Clinical Excellence",
@@ -1650,24 +1862,33 @@ const content = {
     image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d",
     items: [
       { title: "Patient Advocacy", description: "Your health comes first." },
-      { title: "Optimized Outcomes", description: "Better recovery, fewer risks." },
-      { title: "Life-Saving Assurance", description: "Care when it matters most." }
-    ]
+      {
+        title: "Optimized Outcomes",
+        description: "Better recovery, fewer risks.",
+      },
+      {
+        title: "Life-Saving Assurance",
+        description: "Care when it matters most.",
+      },
+    ],
   },
   footer: {
     brandName: "Svasthya Hub",
-    description:
-      "India’s pioneering PharmD-led clinical pharmacy network.",
-    quickLinks: ["Privacy Policy", "FAQs", "Partner Login", "Terms of Service"],
+    description: "India’s pioneering PharmD-led clinical pharmacy network.",
+    quickLinks: [
+      "Privacy Policy",
+      "FAQs",
+      <a href="/pharmacist-login">Partner Login</a>,
+      "Terms of Service",
+    ],
     services: [
       "Clinical Pharmacy",
       "Medication Therapy",
       "Health Consultations",
-      "Partner Programs"
+      "Partner Programs",
     ],
-    copyright:
-      `© ${new Date().getFullYear()} Svasthya Hub. All rights reserved.`
-  }
+    copyright: `© ${new Date().getFullYear()} Svasthya Hub. All rights reserved.`,
+  },
 };
 
 /* ================= PAGE ================= */
@@ -1679,7 +1900,8 @@ export default function Dashboard() {
       <Hero />
       <Features />
       <About />
-       <Trust />
+      <PatientVision />
+      <Trust />
       <Footer />
     </div>
   );
@@ -1687,59 +1909,58 @@ export default function Dashboard() {
 
 /* ================= HEADER ================= */
 
-const Header = () => (
-  <header className="sticky top-0 z-50 bg-white border-b">
-    <div className="max-w-7xl mx-auto h-20 px-6 flex items-center justify-between">
-      
-      {/* Logo */}
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 bg-[#0369a1] rounded-xl flex items-center justify-center">
-          <Stethoscope className="text-white" />
-        </div>
-        <span className="text-xl font-bold text-[#0369a1]">
-          Svasthya Hub
-        </span>
-      </div>
+// const Header = () => (
+//   <header className="sticky top-0 z-50 bg-white border-b">
+//     <div className="max-w-7xl mx-auto h-20 px-6 flex items-center justify-between">
 
-      {/* Navigation */}
-      <nav className="hidden md:flex items-center gap-8">
-        <a
-          href="#features"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          Features
-        </a>
-        <a
-          href="#about"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          About Us
-        </a>
-        <a
-          href="#partners"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          Partners
-        </a>
-        <a
-          href="#contact"
-          className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
-        >
-          Contact
-        </a>
-      </nav>
+//       {/* Logo */}
+//       <div className="flex items-center gap-3">
+//         <div className="w-11 h-11 bg-[#0369a1] rounded-xl flex items-center justify-center">
+//           <Stethoscope className="text-white" />
+//         </div>
+//         <span className="text-xl font-bold text-[#0369a1]">
+//           Svasthya Hub
+//         </span>
+//       </div>
 
-      {/* CTA */}
-      <div className="hidden md:block">
-        <button className="bg-[#0369a1] text-white px-6 py-2 rounded-md font-medium hover:bg-[#035f8f] transition">
-          Consult a PharmD
-        </button>
-      </div>
+//       {/* Navigation */}
+//       <nav className="hidden md:flex items-center gap-8">
+//         <a
+//           href="#features"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           Features
+//         </a>
+//         <a
+//           href="#about"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           About Us
+//         </a>
+//         <a
+//           href="#partners"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           Partners
+//         </a>
+//         <a
+//           href="#contact"
+//           className="text-gray-600 hover:text-[#0369a1] transition-colors font-medium"
+//         >
+//           Contact
+//         </a>
+//       </nav>
 
-    </div>
-  </header>
-);
+//       {/* CTA */}
+//       <div className="hidden md:block">
+//         <button className="bg-[#0369a1] text-white px-6 py-2 rounded-md font-medium hover:bg-[#035f8f] transition">
+//           Consult a PharmD
+//         </button>
+//       </div>
 
+//     </div>
+//   </header>
+// );
 
 /* ================= HERO ================= */
 
@@ -1756,9 +1977,7 @@ const Hero = () => (
           {content.hero.title}
         </h1>
 
-        <p className="mt-6 text-lg text-gray-600">
-          {content.hero.description}
-        </p>
+        <p className="mt-6 text-lg text-gray-600">{content.hero.description}</p>
 
         <div className="mt-8 flex gap-4">
           <button className="px-8 py-3 bg-[#0369a1] text-white rounded-lg font-semibold">
@@ -1770,10 +1989,7 @@ const Hero = () => (
         </div>
       </div>
 
-      <img
-        src={content.hero.image}
-        className="rounded-2xl shadow-xl"
-      />
+      <img src={content.hero.image} className="rounded-2xl shadow-xl" />
     </div>
   </section>
 );
@@ -1796,7 +2012,10 @@ const Features = () => (
         {content.features.items.map((item, i) => {
           const Icon = FEATURE_ICONS[i];
           return (
-            <div key={i} className="p-6 rounded-2xl border shadow hover:shadow-xl">
+            <div
+              key={i}
+              className="p-6 rounded-2xl border shadow hover:shadow-xl"
+            >
               <Icon className="w-7 h-7 text-[#0369a1]" />
               <h3 className="mt-4 text-xl font-semibold">{item.title}</h3>
               <p className="mt-2 text-gray-600">{item.description}</p>
@@ -1840,12 +2059,61 @@ const About = () => (
     </div>
   </section>
 );
+
+/* ================= Patient Visions================= */
+const PatientVision = () => (
+  <section className="w-full max-w-4xl mx-auto mt-10">
+    <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition">
+      {/* Subtle Accent */}
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-teal-400" />
+
+      <div className="p-8 sm:p-10">
+        <h2 className="text-xl font-extrabold text-slate-900 mb-4">
+          <u>Founder's Vision</u>
+        </h2>
+        {/* Heading */}
+        <h2 className="text-2xl sm:text-3xl  text-slate-900 mb-4">
+          World-Class Safety in Every Neighborhood
+        </h2>
+
+        {/* Divider */}
+        <div className="w-16 h-1 bg-blue-600 rounded-full mb-6" />
+
+        {/* Content */}
+        <p className="text-slate-600 leading-relaxed text-base sm:text-lg">
+          We are on a mission to ensure you never have to second-guess your
+          healthcare.
+          <span className="font-semibold text-slate-800"> SvasthyaHub</span> is
+          bringing hospital-grade safety checks to your local pharmacy—so every
+          prescription is verified, every interaction is checked, and every
+          patient is protected.
+        </p>
+
+        <p className="text-slate-600 leading-relaxed text-base sm:text-lg mt-4">
+          We promise
+          <span className="font-semibold text-blue-600"> Verified Quality</span>
+          ,
+          <span className="font-semibold text-green-600"> Expert Guidance</span>
+          , and
+          <span className="font-semibold text-teal-600"> Fair Prices</span> for
+          every family in Bharat. Because your health deserves nothing less.
+        </p>
+        <h2 className="font-semibold  text-slate-900">
+          <u>Dr. Ankit Rana</u>
+        </h2>
+        <h2 className="font-semibold text-slate-900">
+          <u>Doctor of Pharmacy</u>
+        </h2>
+      </div>
+    </div>
+  </section>
+);
+
 /* ================= PARTNERS / TRUST ================= */
 
 const Trust = () => (
   <section className="py-24 bg-white">
     <div className="max-w-7xl mx-auto px-6 text-center">
-      
       <h2 className="text-5xl font-bold text-gray-900">
         Trusted by Leaders in Healthcare
       </h2>
@@ -1885,7 +2153,7 @@ const Trust = () => (
 
         <div className="mt-8 flex justify-center gap-4">
           <button className="bg-white text-[#0369a1] px-8 py-3 rounded-lg font-semibold">
-            Find a Specialist
+            <a href="/login">Find a Specialist</a>
           </button>
           <button className="border border-white px-8 py-3 rounded-lg font-semibold">
             For Healthcare Providers
@@ -1896,13 +2164,11 @@ const Trust = () => (
   </section>
 );
 
-
 /* ================= FOOTER (FIXED) ================= */
 
 const Footer = () => (
   <footer className="bg-gray-900 text-white pt-16 pb-8">
     <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12">
-      
       {/* BRAND */}
       <div>
         <h3 className="text-xl font-bold">{content.footer.brandName}</h3>
@@ -1935,11 +2201,18 @@ const Footer = () => (
 
       {/* CONTACT */}
       <div className="space-y-3 text-gray-400">
-        <div className="flex gap-2"><Mail /> <a href="mailto:hudsvasthya@gmail.com">hubsvasthya@gmail.com</a></div>
-        <div className="flex gap-2"><Phone /> <a href="tel:+91 9523443854">+91 9523443854</a></div>
-        <div className="flex gap-2"><MapPin />Jaipur, Rajasthan, India</div>
+        <div className="flex gap-2">
+          <Mail />{" "}
+          <a href="mailto:hudsvasthya@gmail.com">hubsvasthya@gmail.com</a>
+        </div>
+        <div className="flex gap-2">
+          <Phone /> <a href="tel:+91 9523443854">+91 9523443854</a>
+        </div>
+        <div className="flex gap-2">
+          <MapPin />
+          Jaipur, Rajasthan, India
+        </div>
       </div>
-
     </div>
 
     <p className="mt-12 text-center text-gray-500">
@@ -1974,7 +2247,7 @@ const Doctor = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-gray-50 p-6">
+    <div className="min-h-screen p-6 bg-gray-100 relative">
       <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">
         Find Your <span className="text-indigo-600">Doctor</span>
       </h1>
@@ -2084,12 +2357,15 @@ export default Labtest;
 </file>
 
 <file path="src/screens/Login.jsx">
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/nlogo.jpg";
+import Shivang from "../assets/Shivang.jpeg";
+import Sachin from "../assets/Sachin.jpeg";
 import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Login = () => {
   const { loginUser } = useAuth(); // ✅ NEW CONTEXT METHOD
@@ -2108,6 +2384,15 @@ const Login = () => {
   const [selectedRole, setSelectedRole] = useState("user");
   const [showPassword, setShowPassword] = useState(true); // 👁️ FIXED
   const [loading, setLoading] = useState(false);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % doctors.length);
+    }, 3500);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -2167,131 +2452,324 @@ const Login = () => {
     }
   };
 
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role);
-    if (role === "pharmacist") navigate("/pharmacist-login");
-    if (role === "admin") navigate("/admin/login");
-  };
+  const doctors = [
+    {
+      name: "Dr. Shivang Mishra",
+      title: "Doctor of Pharmacy (Pharm.D)",
+      role: "Healthcare Consultant",
+      image: Shivang,
+    },
+    {
+      name: "Dr. Sachin Kumar",
+      title: "Doctor of Pharmacy (Pharm.D)",
+      role: "Healthcare Consultant",
+      image: Sachin,
+    },
+    {
+      name: "Dr. Anurag Singh",
+      title: "Doctor of Pharmacy (Pharm.D)",
+      role: "Healthcare Consultant",
+      image: "/doctors/anurag.jpg",
+    },
+  ];
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex justify-center mb-4">
-          <img src={logo} alt="Logo" className="w-20 h-20 rounded-full" />
-        </div>
+    <div className="bg-slate-50 text-slate-900 font-sans">
+      {/* HERO */}
+      <header
+        className="text-white py-20 px-6"
+        style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <span className="bg-sky-500/20 text-sky-300 px-4 py-1 rounded-full text-sm font-semibold border border-sky-500/30">
+              India's First Pharm.D-Led Clinical Network
+            </span>
 
-        {/* ROLE BUTTONS */}
-        <div className="flex justify-center gap-3 mb-6">
-          {["user", "pharmacist", "admin"].map((role) => (
-            <button
-              key={role}
-              onClick={() => handleRoleSelect(role)}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                selectedRole === role
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 hover:bg-blue-100"
-              }`}
-            >
-              {role === "user" && "👤 User"}
-              {role === "pharmacist" && "💊 Pharmacist"}
-              {role === "admin" && "🧑‍💼 Admin"}
-            </button>
-          ))}
-        </div>
-
-        {/* USER FORM */}
-        {selectedRole === "user" && (
-          <>
-            <h1 className="text-2xl font-bold mb-4 text-center">
-              {isLogin ? "User Login" : "User Registration"}
+            <h1 className="text-5xl md:text-6xl font-bold mt-6 leading-tight">
+              Beyond Supply. <br />
+              <span className="text-sky-400">Clinical Partnership.</span>
             </h1>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <>
-                  <input
-                    name="name"
-                    placeholder="Full Name"
-                    value={form.name}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                  <input
-                    name="bloodGroup"
-                    placeholder="Blood Group"
-                    value={form.bloodGroup}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                  <input
-                    name="age"
-                    type="number"
-                    placeholder="Age"
-                    value={form.age}
-                    onChange={handleChange}
-                    className="w-full border p-2 rounded"
-                    required
-                  />
-                </>
-              )}
-
-              <input
-                name="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-
-              <input
-                name="phone"
-                placeholder="Phone"
-                value={form.phone}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-
-              {/* PASSWORD WITH EYE */}
-              <div className="relative">
-                <input
-                  type={showPassword ? "password" : "text"}
-                  name="password"
-                  placeholder="Password"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="w-full border p-2 rounded pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-gray-500"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-
-              <button
-                disabled={loading}
-                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? "Logging in..." : isLogin ? "Login" : "Register"}
-              </button>
-            </form>
-
-            <p
-              className="text-sm text-center mt-4 text-blue-600 cursor-pointer"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin
-                ? "Don't have an account? Register"
-                : "Already have an account? Login"}
+            <p className="text-slate-300 text-lg mt-6 max-w-lg">
+              Stop just buying medicine. Start managing your health with expert
+              oversight from Pharm.D professionals. We ensure every dose is
+              safe, effective, and tailored to you.
             </p>
-          </>
-        )}
+
+            <div className="flex gap-4 mt-10 flex-wrap">
+              <a
+                href="#userform"
+                className="bg-sky-500 hover:bg-sky-400 px-8 py-4 rounded-xl font-bold text-lg transition"
+              >
+                Get Your Safety Audit
+              </a>
+              <a
+                href="#userform"
+                className="border border-slate-500 hover:bg-white/10 px-8 py-4 rounded-xl font-bold text-lg transition"
+              >
+                Meet the Doctor
+              </a>
+            </div>
+          </div>
+
+          {/* DOCTOR CARD */}
+          <div className="relative w-full max-w-lg mx-auto overflow-hidden">
+            {/* CARD */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={index}
+                initial={{ x: -120, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 120, opacity: 0 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              >
+                <div className="relative">
+                  <div className="absolute -inset-4 bg-sky-500/20 blur-3xl rounded-full" />
+
+                  <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-[0_0_20px_rgba(14,165,233,0.2)]">
+                    <div className="flex items-center gap-4 mb-6">
+                      {/* IMAGE */}
+                      <img
+                        src={doctors[index].image}
+                        alt={doctors[index].name}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-sky-500"
+                      />
+
+                      <div>
+                        <p className="font-bold text-xl">
+                          {doctors[index].name}
+                        </p>
+                        <p className="text-sky-400 text-sm italic">
+                          {doctors[index].title}
+                        </p>
+                        <p className="text-sky-400 text-sm italic">
+                          {doctors[index].role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                        <span>Clinical Audits</span>
+                        <span className="text-sky-400 font-bold">500+</span>
+                      </div>
+                      <div className="bg-slate-900/50 p-4 rounded-lg flex justify-between">
+                        <span>Med-Safety Rating</span>
+                        <span className="text-sky-400 font-bold">99.9%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* DOT INDICATORS */}
+            <div className="flex justify-center gap-2 mt-6 mb-3">
+              {doctors.map((_, i) => (
+                <motion.span
+                  key={i}
+                  className="w-2.5 h-2.5 rounded-full bg-sky-500"
+                  animate={{
+                    opacity: index === i ? 1 : 0.4,
+                    scale: index === i ? 1.3 : 1,
+                  }}
+                  transition={{ duration: 0.3 }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* FEATURES */}
+      <section className="py-20 px-6 max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-slate-800">
+            Why SvasthyaHub is Different
+          </h2>
+          <p className="text-slate-500 mt-4">
+            We solve the risks that standard pharmacies ignore.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              icon: "⚠️",
+              color: "red",
+              text: "Standard pharmacies just deliver a box. They don't check if your medications clash or if they are right for you.",
+              solution: "Clinical Safety Audits",
+            },
+            {
+              icon: "💊",
+              color: "blue",
+              text: "Patients often miss doses or take them incorrectly, leading to slow recovery or complications.",
+              solution: "Adherence Coaching",
+            },
+            {
+              icon: "🛡️",
+              color: "green",
+              text: "Side effects go unreported. Patients suffer in silence without knowing if it's the drug or the disease.",
+              solution: "Pharmacovigilance",
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="bg-white p-8 rounded-2xl border border-slate-200 hover:shadow-xl transition group"
+            >
+              <div
+                className={`w-14 h-14 bg-${item.color}-100 text-${item.color}-600 rounded-full flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition`}
+              >
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-bold mb-3">The Problem</h3>
+              <p className="text-slate-500 mb-6">{item.text}</p>
+              <div className="pt-6 border-t border-slate-100 text-sky-600 font-semibold">
+                Our Solution: {item.solution}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/*User Form */}
+      <div
+        id="userform"
+        className="flex justify-center items-center p-4  bg-gradient-to-br from-blue-50 to-blue-100 mb-2"
+      >
+        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+          {/* USER FORM */}
+          {selectedRole === "user" && (
+            <>
+              <h1 className="text-2xl font-bold mb-4 text-center">
+                {isLogin
+                  ? "User Can Login Here 👇"
+                  : "User Can Register Here 👇"}
+              </h1>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <>
+                    <input
+                      name="name"
+                      type="text"
+                      placeholder="Full Name"
+                      value={form.name}
+                      onChange={handleChange}
+                      className="w-full border p-2 rounded"
+                      required
+                    />
+                    <input
+                      name="bloodGroup"
+                      type="text"
+                      placeholder="Blood Group"
+                      value={form.bloodGroup}
+                      onChange={handleChange}
+                      className="w-full border p-2 rounded"
+                      required
+                    />
+                    <input
+                      name="age"
+                      type="number"
+                      placeholder="Age"
+                      value={form.age}
+                      onChange={handleChange}
+                      className="w-full border p-2 rounded"
+                      required
+                    />
+                  </>
+                )}
+
+                
+                <input
+                  name="email"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded"
+                />  
+
+                <input
+                  name="phone"
+                  placeholder="Phone"
+                  value={form.phone}
+                  onChange={(e) => {
+                    const value = e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 10);
+                    setForm({ ...form, phone: value });
+                  }}
+                  maxLength={10}
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
+                  className="w-full border p-2 rounded"
+                />
+
+                {/* PASSWORD WITH EYE */}
+                <div className="relative">
+                  <input
+                    type={showPassword ? "password" : "text"}
+                    name="password"
+                    placeholder="Password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-gray-500"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                <button
+                  disabled={loading}
+                  className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loading ? "Logging in..." : isLogin ? "Login" : "Register"}
+                </button>
+              </form>
+
+              <p
+                className="text-sm text-center mt-4 text-blue-600 cursor-pointer"
+                onClick={() => setIsLogin(!isLogin)}
+              >
+                {isLogin
+                  ? "Don't have an account? Register"
+                  : "Already have an account? Login"}
+              </p>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* CTA */}
+      <section className="bg-sky-600 py-16 px-6 text-center text-white">
+        <h2 className="text-4xl font-bold mb-6">
+          Ready for a safer healthcare journey?
+        </h2>
+        <p className="text-sky-100 text-xl mb-10 max-w-2xl mx-auto">
+          Upload your prescription for a complimentary Clinical Safety Audit by
+          our Pharm.D team.
+        </p>
+        <a
+          href="#userform"
+          className="inline-block bg-white text-sky-600 px-10 py-4 rounded-full font-bold text-xl hover:bg-slate-100 transition shadow-lg"
+        >
+          Upload Prescription
+        </a>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-10 text-center text-slate-500 text-sm">
+        © 2025 SvasthyaHub. Founded by Dr. Ankit Rana.
+      </footer>
     </div>
   );
 };
@@ -2313,11 +2791,14 @@ const PharmacistLogin = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
 
+  const [partnerOpen, setPartnerOpen] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
+
   const navigate = useNavigate();
   const { loginPharmacist } = useAuth();
 
   const handleLogin = async (e) => {
-     e.preventDefault();
+    e.preventDefault();
     setLoading(true);
     try {
       const res = await axios.post(
@@ -2330,55 +2811,303 @@ const PharmacistLogin = () => {
       navigate("/pharmacy-admin", { replace: true });
     } catch {
       setError("Invalid credentials");
-    }finally {
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 border rounded shadow">
-  <h2 className="text-xl mb-4 font-semibold">Pharmacist Login</h2>
+    <div className="text-slate-800 antialiased scroll-smooth">
+      {/* HERO */}
+      <header className="pt-32 pb-20 border-b border-blue-100 bg-[radial-gradient(#bae6fd_1px,transparent_1px)] bg-[size:32px_32px] bg-[#f0f9ff]">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <span className="inline-block bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-bold mb-6">
+              🚀 Incubated at NIMS University
+            </span>
 
-  <input
-    type="email"
-    className="w-full p-2 mb-3 border rounded"
-    placeholder="Email"
-    value={email}
-    onChange={(e) => setEmail(e.target.value)}
-  />
+            <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
+              India’s First <span className="text-blue-600">PharmD-Led</span>
+              <br />
+              Clinical Pharmacy Network.
+            </h1>
 
-  {/* 🔐 Password Field */}
-  <div className="relative mb-3">
-    <input
-      type={showPassword ? "password" : "text"}
-      placeholder="Password"
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
-      className="w-full p-2 pr-10 border rounded"
-    />
+            <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+              Transforming local medical stores into trusted centers for
+              <strong> Affordable Quality Medicines</strong> & expert guidance.
+            </p>
 
-    <button
-      type="button"
-      onClick={() => setShowPassword((p) => !p)}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-    >
-      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-    </button>
-  </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* <button
+                onClick={() => setPartnerOpen(true)} */}
+                <a href="#pharmacistform"
+                className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition"
+              >
+                Become a Partner
+                </a>
+              {/* </button> */}
+              <button
+                onClick={() => setDownloadOpen(true)}
+                className="bg-white border border-slate-300 px-8 py-4 rounded-xl font-bold text-lg hover:bg-slate-50 transition"
+              >
+                Download App
+              </button>
+            </div>
+          </div>
 
-  <button
-    onClick={handleLogin}
-    disabled={loading}
-    className="w-full bg-teal-600 text-white py-2 rounded disabled:opacity-50"
-  >
-    {loading ? "Logging in..." : "Login"}
-  </button>
+          {/* MOCK CARD */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-blue-600 rounded-3xl rotate-3 opacity-10" />
+            <div className="relative bg-white p-8 rounded-3xl shadow-2xl border">
+              <div className="flex items-center gap-4 mb-6 border-b pb-6">
+                <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                  ✅
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">PharmD Verified Safe</h3>
+                  <p className="text-sm text-slate-500">
+                    Interaction Check Passed
+                  </p>
+                </div>
+              </div>
 
-  {error && <p className="text-red-600 mt-2">{error}</p>}
-</div>
+              <Medicine
+                name="SvasthyaHub Metformin 500"
+                mrp="₹45"
+                price="₹18.00"
+              />
+              <Medicine
+                name="SvasthyaHub Telmisartan 40"
+                mrp="₹55"
+                price="₹22.00"
+              />
 
+              <div className="mt-6 text-center">
+                <span className="bg-red-50 text-red-600 text-xs font-bold px-3 py-1 rounded-full">
+                  ❤️ 500+ Hero Points Earned
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* FEATURES */}
+      <section id="features" className="py-10 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold mb-4">Why SvasthyaHub?</h2>
+          <p className="text-slate-600 max-w-2xl mx-auto mb-16">
+            Clinical expertise meets supply-chain efficiency.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Feature
+              title="Clinical Safety First"
+              desc="Every prescription is checked for interactions."
+            />
+            <Feature
+              title="Affordable Quality"
+              desc="WHO-GMP medicines at 60% lower cost."
+            />
+            <Feature
+              title="Community Loyalty"
+              desc="Blood donor network with real rewards."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/*Pharmacist Form*/}
+      <div
+        id="pharmacistform"
+        className="max-w-md mx-auto m-2  p-6 border rounded shadow "
+      >
+        <h2 className="flex justify-center text-xl mb-4 font-semibold">
+          Pharmacist Can Login Here 👇
+        </h2>
+
+        <input
+          type="email"
+          className="w-full p-2 mb-3 border rounded"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        {/* 🔐 Password Field */}
+        <div className="relative mb-3">
+          <input
+            type={showPassword ? "password" : "text"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 pr-10 border rounded"
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword((p) => !p)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full bg-teal-600 text-white py-2 rounded disabled:opacity-50"
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
+
+        {error && <p className="text-red-600 mt-2">{error}</p>}
+      </div>
+
+      {/* Pharmacist Vision */}
+      <section className="w-full max-w-4xl mx-auto m-10">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-lg transition">
+          {/* Accent Line */}
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500" />
+
+          <div className="p-8 sm:p-10">
+            {/* Heading */}
+            <h2 className="text-xl  font-extrabold text-slate-900 mb-4">
+              <u>Founder's Vision</u>
+            </h2>
+            <h2 className="text-2xl sm:text-3xl  text-slate-900 mb-4">
+              Lead the Future of Pharmacy
+            </h2>
+
+            {/* Divider */}
+            <div className="w-16 h-1 bg-indigo-600 rounded-full mb-6" />
+
+            {/* Content */}
+            <p className="text-slate-600 leading-relaxed text-base sm:text-lg">
+              Don’t just survive the competition—
+              <span className="font-semibold text-slate-800">lead it</span>.
+              SvasthyaHub is empowering forward-thinking pharmacists to become
+              the most trusted clinical authority in their communities.
+            </p>
+
+            <p className="text-slate-600 leading-relaxed text-base sm:text-lg mt-4">
+              With our
+              <span className="font-semibold text-indigo-600">
+                {" "}
+                Pharm.D-led clinical technology
+              </span>{" "}
+              and
+              <span className="font-semibold text-green-600">
+                {" "}
+                high-margin supply chain
+              </span>
+              , we give you the power to protect patients, elevate your
+              professional role, and grow your business with confidence.
+            </p>
+
+            <p className="text-slate-700 font-semibold text-lg mt-6 mb-4">
+              Save lives. Build trust. Grow stronger.
+              <span className="text-indigo-600"> Join the revolution.</span>
+            </p>
+            <h2 className="font-semibold  text-slate-900">
+              <u>Dr. Ankit Rana</u>
+            </h2>
+            <h2 className="font-semibold text-slate-900">
+              <u>Doctor of Pharmacy</u>
+            </h2>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-slate-900 text-slate-300 py-12">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-8">
+          <div className="md:col-span-2">
+            <h3 className="text-2xl font-bold text-white">SvasthyaHub</h3>
+            <p className="mt-4 text-sm max-w-xs">
+              India’s safest and most affordable pharmacy network.
+            </p>
+          </div>
+          <FooterCol
+            title="Company"
+            items={["About Us", "Careers", "Contact"]}
+          />
+          <FooterCol title="Legal" items={["Privacy Policy", "Terms of Use"]} />
+        </div>
+
+        <div className="text-center text-xs mt-12 border-t border-slate-800 pt-6">
+          © 2025 SvasthyaHub. All rights reserved.
+        </div>
+      </footer>
+
+      {/* {partnerOpen && (
+        <Modal title="Partner Login" onClose={() => setPartnerOpen(false)}>
+          <a
+            href=""
+            className="block w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-center"
+          >
+            Continue to Dashboard
+          </a>
+        </Modal>
+      )}
+
+      {downloadOpen && (
+        <Modal title="Get the App" onClose={() => setDownloadOpen(false)}>
+          <button className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">
+            Download APK
+          </button>
+        </Modal>
+      )} */}
+    </div>
   );
 };
+
+/* ---------- COMPONENTS ---------- */
+
+const Medicine = ({ name, mrp, price }) => (
+  <div className="flex justify-between bg-slate-50 p-4 rounded-xl mb-3">
+    <div>
+      <p className="text-xs text-slate-500 uppercase font-bold">Medicine</p>
+      <p className="font-bold">{name}</p>
+    </div>
+    <div className="text-right">
+      <p className="text-xs line-through">{mrp}</p>
+      <p className="font-bold text-green-600">{price}</p>
+    </div>
+  </div>
+);
+
+const Feature = ({ title, desc }) => (
+  <div className="bg-white p-8 rounded-2xl border hover:shadow-xl transition">
+    <h3 className="text-xl font-bold mb-3">{title}</h3>
+    <p className="text-slate-600">{desc}</p>
+  </div>
+);
+
+const FooterCol = ({ title, items }) => (
+  <div>
+    <h4 className="text-white font-bold mb-4">{title}</h4>
+    <ul className="space-y-2 text-sm">
+      {items.map((i) => (
+        <li key={i} className="hover:text-white cursor-pointer">
+          {i}
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+// const Modal = ({ title, children, onClose }) => (
+//   <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+//     <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
+//       <div className="flex justify-between items-center mb-4">
+//         <h3 className="text-xl font-bold">{title}</h3>
+//         <button onClick={onClose}>✕</button>
+//       </div>
+//       {children}
+//     </div>
+//   </div>
+// );
 
 export default PharmacistLogin;
 </file>
@@ -2838,7 +3567,7 @@ const Profile = () => {
   return (
     <div
       className="min-h-screen bg-gray-100 p-6 bg-cover bg-center"
-      style={{ backgroundImage: `url(${bgImage})` }}
+      // style={{ backgroundImage: `url(${bgImage})` }}
     >
       <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center"> Hello, <span className="text-teal-600">{userName || "Guest"}</span></h1>
 
@@ -3390,73 +4119,155 @@ export default Suraksha;
 <file path="src/screens/UserDashboard.jsx">
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import bgImage from "../assets/bgc.avif";
-import logo from "../assets/nlogo.jpg";
 
+import { Link } from "react-router-dom";
+
+/* ---------------- ICON COMPONENT ---------------- */
+const Icon = ({ children, className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    {children}
+  </svg>
+);
+
+const Icons = {
+  Home: () => (
+    <Icon className="w-5 h-5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </Icon>
+  ),
+
+  Box: () => (
+    <Icon className="w-5 h-5">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4" />
+    </Icon>
+  ),
+
+  Shield: () => (
+    <Icon className="w-10 h-10">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </Icon>
+  ),
+
+  Truck: () => (
+    <Icon className="w-5 h-5">
+      <rect x="1" y="3" width="15" height="13" />
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </Icon>
+  ),
+
+  Image: () => (
+    <Icon className="w-5 h-5">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </Icon>
+  ),
+
+  Drop: () => (
+    <Icon className="w-5 h-5">
+      <path d="M12 2.69l5.74 5.74c2.58 2.58 2.58 6.76 0 9.34a6.6 6.6 0 0 1-9.34 0c-2.58-2.58-2.58-6.76 0-9.34L12 2.69z" />
+    </Icon>
+  ),
+};
+
+/* ---------------- MAIN COMPONENT ---------------- */
 const UserDashboard = ({ user }) => {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState("");
+  const [userName, setUserName] = useState("Guest");
 
   useEffect(() => {
     if (user && user.name) {
-      setUserName(user.name); // Use user from parent state if available
+      setUserName(user.name);
     } else {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUserName(parsedUser.name);
+        setUserName(JSON.parse(storedUser).name);
       }
     }
   }, [user]);
 
   const cards = [
-    { name: "Aushadhi", route: "/aushadhi", color: "bg-teal-100", hover: "hover:shadow-lg hover:-translate-y-1" },
-    { name: "Suraksha", route: "/suraksha", color: "bg-orange-200", hover: "hover:shadow-lg hover:-translate-y-1" },
-    { name: "Raksha", route: "/raksha", color: "bg-white", hover: "hover:shadow-lg hover:-translate-y-1" },
-    // { name: "Doctor", route: "/doctor", color: "bg-lime-100", hover: "hover:shadow-lg hover:-translate-y-1" },
-    // { name: "Lab Test", route: "/labtest", color: "bg-blue-200", hover: "hover:shadow-lg hover:-translate-y-1" },
-    { name: "AI Health Assist", route: "/healthassist", color: "bg-green-200", hover: "hover:shadow-lg hover:-translate-y-1" },
+    // {
+    //   name: "Aushadhi",
+    //   route: "/aushadhi",
+    //   color: "bg-blue-100",
+    //   icon: <Icons.Box />,
+    // },
+    {
+      name: "Suraksha",
+      route: "/suraksha",
+      color: "bg-purple-100",
+      icon: <Icons.Shield />,
+    },
+    // {
+    //   name: "Raksha",
+    //   route: "/raksha",
+    //   color: "bg-red-100",
+    //   icon: <Icons.Shield />,
+    // },
+    {
+      name: "AI Health Assist",
+      route: "/healthassist",
+      color: "bg-green-100",
+      icon: <Icons.Home />,
+    },
+    {
+      name: "Consult a Pharm D",
+      route: "/healthassist",
+      color: "bg-green-100",
+      icon: <Icons.Home />,
+    },
   ];
 
   return (
-    <div
-      className="relative min-h-screen w-full flex flex-col items-center justify-start p-4 sm:p-6 bg-no-repeat bg-center bg-cover md:bg-fixed"
-      style={{ backgroundImage: `url(${bgImage})` }}
-    >
-      {/* Overlay for readability */}
-      <div className="absolute inset-0 bg-white/40 sm:bg-white/30 md:bg-white/20"></div>
+    <div className="min-h-screen p-6 bg-gray-100 relative">
 
-      {/* Content above overlay */}
-      <div className="relative z-10 w-full flex flex-col items-center">
-        {/* Logo */}
-        <img
-          src={logo}
-          alt="Logo"
-          className="absolute top-1 left-1 w-14 h-14 sm:w-20 sm:h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 object-contain drop-shadow-md rounded-full"
-        />
+      {/* ---------------- MAIN CONTENT ---------------- */}
+      <main className="flex-1 pt-6 px-4  md:pt-24  sm:px-6 md:px-8 space-y-8">
+        {/* ---- GRADIENT HEADER ---- */}
+        <div className="bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
+          <div className="absolute right-4 top-4 opacity-10 hidden sm:block">
+            <Icons.Shield />
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
+            Hello,
+            <br />
+            {userName}
+          </h1>
+          <p className="text-teal-100 text-sm sm:text-base">
+            Your Companion in Crisis, Your Partner in Care.
+          </p>
+        </div>
 
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-8 text-gray-800 text-center bg-white/70 px-3 sm:px-6 py-2 rounded-xl shadow-md mt-20">
-          Welcome, <span className="text-teal-600">{userName || "Guest"}</span>
-        </h1>
-
-        {/* Cards */}
-        <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8 w-full max-w-6xl">
-          {cards.map((item, idx) => (
+        {/* ---- CARDS GRID ---- */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {cards.map((card, index) => (
             <div
-              key={idx}
-              onClick={() => navigate(item.route)}
-              className={`w-40 h-40 sm:w-52 sm:h-52 md:w-64 md:h-64 lg:w-72 lg:h-72 ${item.color} rounded-xl p-3 sm:p-5 flex flex-col items-center justify-center cursor-pointer transform transition duration-300 ${item.hover}`}
+              key={index}
+              onClick={() => navigate(card.route)}
+              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg cursor-pointer transition flex flex-col items-center gap-4 hover:-translate-y-1"
             >
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-1">{item.name}</h2>
-              <p className="text-gray-600 text-xs sm:text-sm md:text-base">Go to {item.name} module</p>
+              <div className={`${card.color} p-4 rounded-full`}>
+                {card.icon}
+              </div>
+              <h3 className="font-bold text-slate-700 text-center">
+                {card.name}
+              </h3>
             </div>
           ))}
         </div>
-
-        <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-gray-700 mt-8 text-center px-4">
-          Your Companion in Crisis. Your Partner in Care.
-        </h1>
-      </div>
+      </main>
     </div>
   );
 };
@@ -3500,6 +4311,9 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    target: "es2015" // 🔥 REQUIRED for Safari
+  }
 });
 </file>
 

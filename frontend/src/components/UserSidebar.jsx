@@ -74,7 +74,7 @@ const UserSidebar = ({ userName }) => {
           <Icons.Home /> Home
         </Link>
 
-        <Link to="/orders" className="sidebar-link">
+        <Link to="/userdashboard" className="sidebar-link">
           <Icons.Truck /> My Orders
         </Link>
 
