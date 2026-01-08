@@ -183,7 +183,7 @@ export default function AdminDashboard() {
             <Input
               placeholder="Password"
               type={showPharmacistPassword ? "password" : "text"}
-              value={newPharmacist.password}F
+              value={newPharmacist.password}
               onChange={(e) =>
                 setNewPharmacist({ ...newPharmacist, password: e.target.value })
               }
