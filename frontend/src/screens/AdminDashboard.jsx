@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [pharmacists, setPharmacists] = useState([]);
+  const [showAdminPassword, setShowAdminPassword] = useState(true);
+  const [showPharmacistPassword, setShowPharmacistPassword] = useState(true);
 
   const [newAdmin, setNewAdmin] = useState({ email: "", password: "" });
   const [newPharmacist, setNewPharmacist] = useState({
@@ -138,14 +141,25 @@ export default function AdminDashboard() {
               setNewAdmin({ ...newAdmin, email: e.target.value })
             }
           />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={newAdmin.password}
-            onChange={(e) =>
-              setNewAdmin({ ...newAdmin, password: e.target.value })
-            }
-          />
+
+          <div className="relative">
+            <Input
+              placeholder="Password"
+              value={newAdmin.password}
+              type={showAdminPassword ? "password" : "text"}
+              onChange={(e) =>
+                setNewAdmin({ ...newAdmin, password: e.target.value })
+              }
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowAdminPassword((p) => !p)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white"
+            >
+              {showAdminPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </FormCard>
 
         <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
@@ -156,6 +170,7 @@ export default function AdminDashboard() {
               setNewPharmacist({ ...newPharmacist, name: e.target.value })
             }
           />
+
           <Input
             placeholder="Email"
             value={newPharmacist.email}
@@ -163,98 +178,106 @@ export default function AdminDashboard() {
               setNewPharmacist({ ...newPharmacist, email: e.target.value })
             }
           />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={newPharmacist.password}
-            onChange={(e) =>
-              setNewPharmacist({ ...newPharmacist, password: e.target.value })
-            }
-          />
+
+          <div className="relative">
+            <Input
+              placeholder="Password"
+              type={showPharmacistPassword ? "password" : "text"}
+              value={newPharmacist.password}F
+              onChange={(e) =>
+                setNewPharmacist({ ...newPharmacist, password: e.target.value })
+              }
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPharmacistPassword((p) => !p)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white"
+            >
+              {showPharmacistPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </FormCard>
       </div>
 
       {/* 📋 Tables */}
       <ResponsiveTable
-  title="Registered Users"
-  headers={["Name", "Email", "Phone"]}
-  tableRows={users.map((u) => (
-    <tr key={u._id}>
-      <td className="p-3">{u.name}</td>
-      <td className="p-3">{u.email}</td>
-      <td className="p-3">{u.phone || "—"}</td>
-    </tr>
-  ))}
-  mobileCards={users.map((u) => (
-    <div
-      key={u._id}
-      className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
-    >
-      <p className="font-semibold">{u.name}</p>
-      <p className="text-sm text-gray-600 break-all">{u.email}</p>
-      <p className="text-sm mt-1">📞 {u.phone || "—"}</p>
-    </div>
-  ))}
-/>
-
-
-      <ResponsiveTable
-  title="Blood Requests"
-  headers={["Email", "Blood Group", "Status"]}
-  tableRows={requests.map((r) => (
-    <tr key={r._id}>
-      <td className="p-3">{r.requester || "—"}</td>
-      <td className="p-3">{r.group}</td>
-      <td className="p-3">{r.status}</td>
-    </tr>
-  ))}
-  mobileCards={requests.map((r) => (
-    <div
-      key={r._id}
-      className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
-    >
-      <p className="font-semibold">Email: {r.requester || "—"}</p>
-      <p className="font-semibold">Blood Group: {r.group}</p>
-      <p className="text-sm mt-1">Status: {r.status}</p>
-    </div>
-  ))}
-/>
-
+        title="Registered Users"
+        headers={["Name", "Email", "Phone"]}
+        tableRows={users.map((u) => (
+          <tr key={u._id}>
+            <td className="p-3">{u.name}</td>
+            <td className="p-3">{u.email}</td>
+            <td className="p-3">{u.phone || "—"}</td>
+          </tr>
+        ))}
+        mobileCards={users.map((u) => (
+          <div
+            key={u._id}
+            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
+          >
+            <p className="font-semibold">{u.name}</p>
+            <p className="text-sm text-gray-600 break-all">{u.email}</p>
+            <p className="text-sm mt-1">📞 {u.phone || "—"}</p>
+          </div>
+        ))}
+      />
 
       <ResponsiveTable
-  title="Pharmacists"
-  headers={["Name", "Email", "Action"]}
-  tableRows={pharmacists.map((p) => (
-    <tr key={p._id}>
-      <td className="p-3">{p.name}</td>
-      <td className="p-3">{p.email}</td>
-      <td className="p-3">
-        <button
-          onClick={() => deletePharmacist(p._id)}
-          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-  mobileCards={pharmacists.map((p) => (
-    <div
-      key={p._id}
-      className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
-    >
-      <p className="font-semibold">{p.name}</p>
-      <p className="text-sm text-gray-600 break-all">{p.email}</p>
-      <button
-        onClick={() => deletePharmacist(p._id)}
-        className="mt-2 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-      >
-        Delete
-      </button>
-    </div>
-  ))}
-/>
+        title="Blood Requests"
+        headers={["Email", "Blood Group", "Status"]}
+        tableRows={requests.map((r) => (
+          <tr key={r._id}>
+            <td className="p-3">{r.requester || "—"}</td>
+            <td className="p-3">{r.group}</td>
+            <td className="p-3">{r.status}</td>
+          </tr>
+        ))}
+        mobileCards={requests.map((r) => (
+          <div
+            key={r._id}
+            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
+          >
+            <p className="font-semibold">Email: {r.requester || "—"}</p>
+            <p className="font-semibold">Blood Group: {r.group}</p>
+            <p className="text-sm mt-1">Status: {r.status}</p>
+          </div>
+        ))}
+      />
 
+      <ResponsiveTable
+        title="Pharmacists"
+        headers={["Name", "Email", "Action"]}
+        tableRows={pharmacists.map((p) => (
+          <tr key={p._id}>
+            <td className="p-3">{p.name}</td>
+            <td className="p-3">{p.email}</td>
+            <td className="p-3">
+              <button
+                onClick={() => deletePharmacist(p._id)}
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        ))}
+        mobileCards={pharmacists.map((p) => (
+          <div
+            key={p._id}
+            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
+          >
+            <p className="font-semibold">{p.name}</p>
+            <p className="text-sm text-gray-600 break-all">{p.email}</p>
+            <button
+              onClick={() => deletePharmacist(p._id)}
+              className="mt-2 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      />
     </div>
   );
 }
@@ -312,4 +335,3 @@ const ResponsiveTable = ({ title, headers, tableRows, mobileCards }) => (
     <div className="sm:hidden space-y-3 p-4">{mobileCards}</div>
   </div>
 );
-
