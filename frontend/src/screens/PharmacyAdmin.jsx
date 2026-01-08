@@ -3,13 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const PharmacyAdmin = () => {
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [pharmacistName, setPharmacistName] = useState("");
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedPrescription, setSelectedPrescription] = useState(null);
-  const [allPresent, setAllPresent] = useState(true);
-  const [manualMedicines, setManualMedicines] = useState([""]);
-
   const navigate = useNavigate();
 
   /* ================= AUTH ================= */
@@ -22,6 +15,17 @@ const PharmacyAdmin = () => {
     return { Authorization: `Bearer ${token}` };
   };
 
+  /* ================= STATE ================= */
+  const [activeTab, setActiveTab] = useState("prescriptions");
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [pharmacistName, setPharmacistName] = useState("");
+  const [toast, setToast] = useState(null);
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [allPresent, setAllPresent] = useState(true);
+  const [manualMedicines, setManualMedicines] = useState([""]);
+
   /* ================= FETCH ================= */
   useEffect(() => {
     fetchPharmacistInfo();
@@ -32,7 +36,6 @@ const PharmacyAdmin = () => {
   const fetchPharmacistInfo = async () => {
     const headers = getHeaders();
     if (!headers) return;
-
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/me`,
@@ -47,19 +50,14 @@ const PharmacyAdmin = () => {
   const fetchPrescriptions = async () => {
     const headers = getHeaders();
     if (!headers) return;
-
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/all`,
-        { headers }
-      );
-      setPrescriptions(res.data);
-    } catch (err) {
-      console.error(err);
-    }
+    const res = await axios.get(
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/all`,
+      { headers }
+    );
+    setPrescriptions(res.data);
   };
 
-  /* ================= MODAL ================= */
+  /* ================= ACTIONS ================= */
   const openConfirmModal = (p) => {
     setSelectedPrescription(p);
     setShowConfirmModal(true);
@@ -67,154 +65,171 @@ const PharmacyAdmin = () => {
     setManualMedicines([""]);
   };
 
-  const closeConfirmModal = () => {
-    setShowConfirmModal(false);
-    setSelectedPrescription(null);
-    setManualMedicines([""]);
-  };
-
-  const handleMedicineInputChange = (i, v) => {
-    const updated = [...manualMedicines];
-    updated[i] = v;
-    setManualMedicines(updated);
-  };
-
-  const addMedicineField = () => {
-    setManualMedicines([...manualMedicines, ""]);
-  };
-
-  /* ================= CONFIRM ================= */
   const handleConfirmMedicines = async () => {
-    if (!selectedPrescription) return;
     const headers = getHeaders();
     if (!headers) return;
 
     await axios.put(
-      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${selectedPrescription._id}/confirm`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/${
+        selectedPrescription._id
+      }/confirm`,
       {
         allPresent,
-        medicines: allPresent
-          ? []
-          : manualMedicines.filter((m) => m.trim()),
+        medicines: allPresent ? [] : manualMedicines.filter(Boolean),
       },
       { headers }
     );
 
     setPrescriptions((prev) =>
       prev.map((p) =>
-        p._id === selectedPrescription._id
-          ? { ...p, status: "confirmed" }
-          : p
+        p._id === selectedPrescription._id ? { ...p, status: "confirmed" } : p
       )
     );
 
-    closeConfirmModal();
+    setShowConfirmModal(false);
+    showToast("Prescription Confirmed");
   };
 
-  /* ================= REJECT ================= */
   const handleReject = async (id) => {
     const headers = getHeaders();
     if (!headers) return;
 
     await axios.put(
-      `${import.meta.env.VITE_BACKEND_URL}/api/pharmacist/prescriptions/${id}/reject`,
+      `${
+        import.meta.env.VITE_BACKEND_URL
+      }/api/pharmacist/prescriptions/${id}/reject`,
       {},
       { headers }
     );
 
     setPrescriptions((prev) =>
-      prev.map((p) =>
-        p._id === id ? { ...p, status: "rejected" } : p
-      )
+      prev.map((p) => (p._id === id ? { ...p, status: "rejected" } : p))
     );
+
+    showToast("Prescription Rejected");
+  };
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
   };
 
   /* ================= UI ================= */
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
-      <h1 className="text-3xl font-bold text-center mb-6">
-        Welcome, {pharmacistName}
-      </h1>
+    <div className="min-h-screen flex bg-slate-100">
+      {/* Sidebar */}
+      {/* Sidebar */}
+      <div className="hidden md:flex w-64 bg-white border-r fixed inset-y-0 flex-col mt-16">
+        {/* Navigation */}
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+          <button
+            onClick={() => setActiveTab("prescriptions")}
+            className={`w-full text-left px-3 py-2 rounded ${
+              activeTab === "prescriptions"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            Prescriptions
+          </button>
+        </nav>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {prescriptions.map((p) => (
-          <div key={p._id} className="bg-white p-4 rounded shadow">
-            <span className="text-xs text-gray-500">
-              {p.type === "manual"
-                ? "Manual Request"
-                : "Uploaded Prescription"}
-            </span>
+        {/* Pharmacist Info */}
+        <div className="p-4 border-t border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
+              {pharmacistName
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
+            </div>
 
-            {/* 👁️ VIEW PRESCRIPTION (RESTORED) */}
-            {p.type === "upload" && p.filename && (
-              <p className="mt-2">
+            <div>
+              <p className="text-sm font-bold text-slate-700">
+                {pharmacistName}
+              </p>
+              <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                Online
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div className="flex-1 ml-0 md:ml-64 pt-16">
+        {/* <div className="h-16 bg-white border-b flex items-center px-6 font-bold">
+          Welcome, {pharmacistName}
+        </div> */}
+
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {prescriptions.map((p) => (
+            <div key={p._id} className="bg-white p-4 rounded shadow">
+              <p className="text-xs text-gray-500">
+                {p.type === "manual"
+                  ? "Manual Request"
+                  : "Uploaded Prescription"}
+              </p>
+
+              {p.type === "upload" && p.filename && (
                 <a
-                  href={`${import.meta.env.VITE_BACKEND_URL}/api/prescriptions/image/${p.filename}`}
+                  href={`${
+                    import.meta.env.VITE_BACKEND_URL
+                  }/api/prescriptions/image/${p.filename}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-blue-600 underline text-sm"
+                  className="text-blue-600 text-sm underline block mt-2"
                 >
                   View Prescription
                 </a>
+              )}
+
+              <p className="text-sm mt-2">
+                <b>User:</b> {p.userEmail}
               </p>
-            )}
 
-            {/* 💊 MANUAL MEDICINES */}
-            {p.type === "manual" && (
-              <>
-                <p className="font-semibold mt-2 text-sm">
-                  Medicines:
-                </p>
-                <ul className="list-disc ml-4 text-sm">
-                  {p.medicines?.map((m, i) => (
-                    <li key={i}>{m}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+              <p className="text-sm">
+                <b>Status:</b>{" "}
+                <span
+                  className={
+                    p.status === "confirmed"
+                      ? "text-green-600"
+                      : p.status === "rejected"
+                      ? "text-red-600"
+                      : "text-yellow-600"
+                  }
+                >
+                  {p.status || "pending"}
+                </span>
+              </p>
 
-            <p className="text-sm mt-2">
-              <b>User:</b> {p.userEmail}
-            </p>
-
-            <p className="text-sm">
-              <b>Status:</b>{" "}
-              <span
-                className={
-                  p.status === "confirmed"
-                    ? "text-green-600"
-                    : p.status === "rejected"
-                    ? "text-red-600"
-                    : "text-yellow-600"
-                }
-              >
-                {p.status || "pending"}
-              </span>
-            </p>
-
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => openConfirmModal(p)}
-                disabled={p.status === "confirmed"}
-                className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50"
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => handleReject(p._id)}
-                disabled={p.status === "rejected"}
-                className="bg-red-600 text-white px-3 py-1 rounded disabled:opacity-50"
-              >
-                Reject
-              </button>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => openConfirmModal(p)}
+                  disabled={p.status === "confirmed"}
+                  className="bg-green-600 text-white px-3 py-1 rounded disabled:opacity-50"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => handleReject(p._id)}
+                  disabled={p.status === "rejected"}
+                  className="bg-red-600 text-white px-3 py-1 rounded disabled:opacity-50"
+                >
+                  Reject
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* ================= CONFIRM MODAL ================= */}
+      {/* Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white p-4 rounded w-80">
             <h2 className="font-bold mb-2">Confirm Medicines</h2>
 
@@ -224,7 +239,7 @@ const PharmacyAdmin = () => {
                 checked={allPresent}
                 onChange={() => setAllPresent(true)}
               />{" "}
-              All medicines present
+              All present
             </label>
 
             <label className="block mt-2">
@@ -242,18 +257,21 @@ const PharmacyAdmin = () => {
                   <input
                     key={i}
                     value={m}
-                    onChange={(e) =>
-                      handleMedicineInputChange(i, e.target.value)
-                    }
+                    onChange={(e) => {
+                      const updated = [...manualMedicines];
+                      updated[i] = e.target.value;
+                      setManualMedicines(updated);
+                    }}
                     className="border w-full mb-1 px-2 py-1"
                     placeholder={`Medicine ${i + 1}`}
                   />
                 ))}
+
                 <button
-                  onClick={addMedicineField}
-                  className="text-blue-600 text-sm"
+                  onClick={() => setManualMedicines([...manualMedicines, ""])}
+                  className="text-blue-600 text-sm mt-1"
                 >
-                  + Add Medicine
+                  + Add more medicines
                 </button>
               </div>
             )}
@@ -266,13 +284,20 @@ const PharmacyAdmin = () => {
                 Confirm
               </button>
               <button
-                onClick={closeConfirmModal}
+                onClick={() => setShowConfirmModal(false)}
                 className="bg-gray-400 text-white px-3 py-1 rounded"
               >
                 Cancel
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 bg-green-600 text-white px-6 py-3 rounded shadow-lg">
+          {toast}
         </div>
       )}
     </div>
