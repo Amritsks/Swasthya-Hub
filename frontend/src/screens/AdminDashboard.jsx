@@ -352,7 +352,7 @@ const FormCard = ({ title, children, onSubmit }) => (
     onSubmit={onSubmit}
     className="bg-[#0f172a] text-white border border-white p-4 rounded shadow-lg shadow-blue-400 space-y-4"
   >
-    <h2 className="font-semibold">{title}</h2>
+    <h2 className="font-extrabold">{title}</h2>
     {children}
     <button className="bg-blue-600 text-white px-4 py-2 rounded">Create</button>
   </form>
