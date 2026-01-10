@@ -173,7 +173,7 @@ const PharmacyAdmin = () => {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           <Link to="/pharmacy-admin" className="sidebar-link active">
-            <Icons.Home /> Prescriptions
+            <Icons.Home /> Dashboard
           </Link>
 
           <Link to="/pharmacy-admin" className="sidebar-link">
