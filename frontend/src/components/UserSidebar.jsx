@@ -74,21 +74,23 @@ const UserSidebar = ({ userName }) => {
           <Icons.Home /> Home
         </Link>
 
+        <Link to="/aushadhi" className="sidebar-link">
+          <Icons.Box /> Order Medicines
+        </Link>
+
+         <Link to="/aushadhi" className="sidebar-link">
+          <Icons.Image /> Upload Prescription
+        </Link>
+        
         <Link to="/userdashboard" className="sidebar-link">
           <Icons.Truck /> My Orders
         </Link>
 
-        <Link to="/aushadhi" className="sidebar-link">
-          <Icons.Box /> Order Medicines
-        </Link>
 
         <Link to="/raksha" className="sidebar-link">
           <Icons.Drop /> Blood Corner
         </Link>
 
-        <Link to="/aushadhi" className="sidebar-link">
-          <Icons.Image /> Upload Prescription
-        </Link>
       </nav>
 
       {/* USER INFO */}

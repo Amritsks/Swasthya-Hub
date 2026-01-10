@@ -36,6 +36,11 @@ const Icons = {
       <rect x="3" y="3" width="18" height="18" rx="2" />
     </Icon>
   ),
+  Home: () => (
+    <Icon className="w-5 h-5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </Icon>
+  ),
 };
 
 /* ================= COMPONENT ================= */
@@ -156,7 +161,7 @@ export default function AdminDashboard() {
       {/* ================= SIDEBAR ================= */}
       <aside className="hidden md:flex w-56 bg-[#0f172a] border-r fixed inset-y-0 flex-col mt-16">
         <nav className="p-4 space-y-2">
-          <SidebarItem label="Dashboard" tab="dashboard" />
+          <SidebarItem label="Dashboard" tab="dashboard" icon={Icons.Home} />
           <SidebarItem label="Users" tab="users" icon={Icons.Users} />
           <SidebarItem
             label="Blood Requests"

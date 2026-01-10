@@ -33,7 +33,7 @@ const Icons = {
   ),
 
   Shield: () => (
-    <Icon className="w-10 h-10">
+    <Icon className="w-5 h-5">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </Icon>
   ),
@@ -79,6 +79,12 @@ const UserDashboard = ({ user }) => {
   }, [user]);
 
   const cards = [
+    {
+      name: "Consult a PharmD",
+      route: "/healthassist",
+      color: "bg-green-100",
+      icon: <Icons.Home />,
+    },
     // {
     //   name: "Aushadhi",
     //   route: "/aushadhi",
@@ -91,12 +97,6 @@ const UserDashboard = ({ user }) => {
       color: "bg-purple-100",
       icon: <Icons.Shield />,
     },
-    // {
-    //   name: "Raksha",
-    //   route: "/raksha",
-    //   color: "bg-red-100",
-    //   icon: <Icons.Shield />,
-    // },
     {
       name: "AI Health Assist",
       route: "/healthassist",
@@ -104,11 +104,12 @@ const UserDashboard = ({ user }) => {
       icon: <Icons.Home />,
     },
     {
-      name: "Consult a Pharm D",
-      route: "/healthassist",
-      color: "bg-green-100",
-      icon: <Icons.Home />,
+      name: "Blood SOS",
+      route: "/raksha",
+      color: "bg-red-100",
+      icon: <Icons.Drop/>,
     },
+    
   ];
 
   return (
@@ -137,12 +138,12 @@ const UserDashboard = ({ user }) => {
             <div
               key={index}
               onClick={() => navigate(card.route)}
-              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg cursor-pointer transition flex flex-col items-center gap-4 hover:-translate-y-1"
+              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg cursor-pointer transition flex flex-col items-center gap-4 hover:-translate-y-1 hover:bg-slate-400"
             >
-              <div className={`${card.color} p-4 rounded-full`}>
+              <div className={`${card.color} p-4 rounded-full `}>
                 {card.icon}
               </div>
-              <h3 className="font-bold text-slate-700 text-center">
+              <h3 className="font-bold text-slate-700  text-center">
                 {card.name}
               </h3>
             </div>
