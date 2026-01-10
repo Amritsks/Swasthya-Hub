@@ -1,6 +1,57 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+
+const Icon = ({ children, className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    {children}
+  </svg>
+);
+
+const Icons = {
+  Home: () => (
+    <Icon className="w-5 h-5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </Icon>
+  ),
+  Search: () => (
+    <Icon className="w-5 h-5">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </Icon>
+  ),
+  Box: () => (
+    <Icon className="w-5 h-5">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4" />
+    </Icon>
+  ),
+  POS: () => (
+    <Icon className="w-5 h-5">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </Icon>
+  ),
+
+  Users: () => (
+    <Icon className="w-5 h-5">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </Icon>
+  ),
+};
 
 const PharmacyAdmin = () => {
   const navigate = useNavigate();
@@ -118,56 +169,46 @@ const PharmacyAdmin = () => {
   return (
     <div className="min-h-screen flex bg-slate-100">
       {/* Sidebar */}
-      {/* Sidebar */}
       <div className="hidden md:flex w-64 bg-white border-r fixed inset-y-0 flex-col mt-16">
         {/* Navigation */}
-        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
-          <button
-            onClick={() => setActiveTab("prescriptions")}
-            className={`w-full text-left px-3 py-2 rounded ${
-              activeTab === "prescriptions"
-                ? "bg-slate-900 text-white"
-                : "text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            Prescriptions
-          </button>
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <Link to="/pharmacy-admin" className="sidebar-link active">
+            <Icons.Home /> Prescriptions
+          </Link>
+
+          <Link to="/pharmacy-admin" className="sidebar-link">
+            <Icons.Search /> Online Orders
+          </Link>
+
+          <Link to="/pharmacy-admin" className="sidebar-link">
+            <Icons.POS /> New Sales
+          </Link>
+
+          <Link to="/pharmacy-admin" className="sidebar-link">
+            <Icons.Box /> Wholesale Store
+          </Link>
+
+          <Link to="/pharmacy-admin" className="sidebar-link">
+            <Icons.Users /> Referrals
+          </Link>
         </nav>
 
-        {/* Pharmacist Info */}
-        <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
-              {pharmacistName
-                ?.split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
-
-            <div>
-              <p className="text-sm font-bold text-slate-700">
-                {pharmacistName}
-              </p>
-              <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                Online
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Main */}
-      <div className="flex-1 ml-0 md:ml-64 pt-16">
-        {/* <div className="h-16 bg-white border-b flex items-center px-6 font-bold">
-          Welcome, {pharmacistName}
-        </div> */}
+      <div className="flex-1 ml-0 md:ml-64 pt-4">
+        <div className="flex justify-center">
+          <div className="h-16 w-72 bg-gray-200 border-b flex items-center justify-center rounded-md shadow-xl shadow-green-500 font-bold">
+            Welcome, {pharmacistName}
+          </div>
+        </div>
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           {prescriptions.map((p) => (
-            <div key={p._id} className="bg-white p-4 rounded shadow">
+            <div
+              key={p._id}
+              className="bg-gray-200 shadow-xl shadow-green-500 p-4 rounded"
+            >
               <p className="text-xs text-gray-500">
                 {p.type === "manual"
                   ? "Manual Request"

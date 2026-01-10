@@ -1,13 +1,51 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router-dom";
 
+/* ================= ICONS ================= */
+const Icon = ({ children, className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    {children}
+  </svg>
+);
+
+const Icons = {
+  Users: () => (
+    <Icon className="w-5 h-5">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+    </Icon>
+  ),
+  Blood: () => (
+    <Icon className="w-5 h-5">
+      <path d="M12 2s6 6 6 10a6 6 0 0 1-12 0c0-4 6-10 6-10z" />
+    </Icon>
+  ),
+  Pharmacist: () => (
+    <Icon className="w-5 h-5">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+    </Icon>
+  ),
+};
+
+/* ================= COMPONENT ================= */
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [pharmacists, setPharmacists] = useState([]);
   const [showAdminPassword, setShowAdminPassword] = useState(true);
   const [showPharmacistPassword, setShowPharmacistPassword] = useState(true);
+  const [activeTab, setActiveTab] = useState("users");
 
   const [newAdmin, setNewAdmin] = useState({ email: "", password: "" });
   const [newPharmacist, setNewPharmacist] = useState({
@@ -22,303 +60,312 @@ export default function AdminDashboard() {
 
   const fetchAll = async () => {
     const token = localStorage.getItem("adminToken");
-    if (!token) {
-      window.location.href = "/admin/login";
-      return;
-    }
+    if (!token) return (window.location.href = "/admin/login");
 
     const headers = { Authorization: `Bearer ${token}` };
+    const [u, r, p] = await Promise.all([
+      axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/users`, {
+        headers,
+      }),
+      axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/requests`,
+        { headers }
+      ),
+      axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists`,
+        { headers }
+      ),
+    ]);
 
-    try {
-      const [u, r, p] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/users`, {
-          headers,
-        }),
-        axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/requests`,
-          { headers }
-        ),
-        axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists`,
-          { headers }
-        ),
-      ]);
-
-      setUsers(u.data);
-      setRequests(r.data);
-      setPharmacists(p.data);
-    } catch (err) {
-      console.error(err);
-      localStorage.removeItem("adminToken");
-      window.location.href = "/admin/login";
-    }
+    setUsers(u.data);
+    setRequests(r.data);
+    setPharmacists(p.data);
   };
 
-  // 🔐 Create Admin (NO TOKEN REQUIRED)
   const createAdmin = async (e) => {
     e.preventDefault();
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/admin/register`,
-        {
-          email: newAdmin.email,
-          password: newAdmin.password,
-        }
-      );
-
-      alert("Admin created");
-      setNewAdmin({ email: "", password: "" });
-    } catch (err) {
-      console.error("Create admin error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to create admin");
-    }
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/admin/register`,
+      newAdmin
+    );
+    setNewAdmin({ email: "", password: "" });
+    alert("Admin created");
   };
 
-  // 💊 Create Pharmacist
   const createPharmacist = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("adminToken");
-
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacist`,
-        newPharmacist,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      alert("Pharmacist created");
-      setNewPharmacist({ name: "", email: "", password: "" });
-      fetchAll();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to create pharmacist");
-    }
+    await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacist`,
+      newPharmacist,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setNewPharmacist({ name: "", email: "", password: "" });
+    fetchAll();
+    alert("Pharmacist created");
   };
-  // ❌ Delete Pharmacist
+
   const deletePharmacist = async (id) => {
+    if (!window.confirm("Delete pharmacist?")) return;
     const token = localStorage.getItem("adminToken");
-
-    if (!window.confirm("Are you sure you want to delete this pharmacist?")) {
-      return;
-    }
-
-    try {
-      await axios.delete(
-        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      alert("Pharmacist deleted");
-      fetchAll();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete pharmacist");
-    }
+    await axios.delete(
+      `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacists/${id}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    fetchAll();
+    alert("Pharmacist Deleted");
   };
+
+  const SidebarItem = ({ label, tab, icon: Icon }) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left
+      ${
+        activeTab === tab
+          ? "bg-blue-600 text-white"
+          : "text-slate-300 hover:bg-slate-700"
+      }`}
+    >
+      {Icon && <Icon />}
+      {label}
+    </button>
+  );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-[#0f172a] text-white min-h-screen">
-      <h1 className="text-2xl text-white sm:text-3xl font-bold mb-6 sm:mb-8">
-        Admin Dashboard
-      </h1>
-
-      {/* 📊 Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10 ">
-        <StatCard title="Users" count={users.length} />
-        <StatCard title="Blood Requests" count={requests.length} />
-        <StatCard title="Pharmacists" count={pharmacists.length} />
-      </div>
-
-      {/* ➕ Create Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
-        <FormCard title="Create Admin" onSubmit={createAdmin}>
-          <Input
-            placeholder="Email"
-            value={newAdmin.email}
-            onChange={(e) =>
-              setNewAdmin({ ...newAdmin, email: e.target.value })
-            }
+    <div className="min-h-screen flex bg-slate-100">
+      {/* ================= SIDEBAR ================= */}
+      <aside className="hidden md:flex w-56 bg-[#0f172a] border-r fixed inset-y-0 flex-col mt-16">
+        <nav className="p-4 space-y-2">
+          <SidebarItem label="Dashboard" tab="Dashboard" icon={Icons.Users} />
+          <SidebarItem label="Users" tab="users" icon={Icons.Users} />
+          <SidebarItem
+            label="Blood Requests"
+            tab="requests"
+            icon={Icons.Blood}
           />
+          <SidebarItem
+            label="Pharmacists"
+            tab="pharmacists"
+            icon={Icons.Pharmacist}
+          />
+        </nav>
+      </aside>
 
-          <div className="relative">
+      {/* ================= MAIN ================= */}
+      <main className="flex-1 ml-0 md:ml-56 p-4 md:p-6">
+        <h1 className="text-2xl md:text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+        {/* STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 ">
+          <StatCard title="Users" count={users.length} />
+          <StatCard title="Blood Requests" count={requests.length} />
+          <StatCard title="Pharmacists" count={pharmacists.length} />
+        </div>
+
+        {/* FORMS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <FormCard title="Create Admin" onSubmit={createAdmin}>
             <Input
-              placeholder="Password"
+              type="email"
+              placeholder="Email"
+              value={newAdmin.email}
+              onChange={(e) =>
+                setNewAdmin({ ...newAdmin, email: e.target.value })
+              }
+            />
+            <PasswordInput
               value={newAdmin.password}
-              type={showAdminPassword ? "password" : "text"}
+              show={showAdminPassword}
+              toggle={() => setShowAdminPassword((p) => !p)}
               onChange={(e) =>
                 setNewAdmin({ ...newAdmin, password: e.target.value })
               }
-              className="pr-10"
             />
-            <button
-              type="button"
-              onClick={() => setShowAdminPassword((p) => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white"
-            >
-              {showAdminPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-        </FormCard>
+          </FormCard>
 
-        <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
-          <Input
-            placeholder="Name"
-            value={newPharmacist.name}
-            onChange={(e) =>
-              setNewPharmacist({ ...newPharmacist, name: e.target.value })
-            }
-          />
-
-          <Input
-            placeholder="Email"
-            value={newPharmacist.email}
-            onChange={(e) =>
-              setNewPharmacist({ ...newPharmacist, email: e.target.value })
-            }
-          />
-
-          <div className="relative">
+          <FormCard title="Create Pharmacist" onSubmit={createPharmacist}>
             <Input
-              placeholder="Password"
-              type={showPharmacistPassword ? "password" : "text"}
+              placeholder="Name"
+              value={newPharmacist.name}
+              onChange={(e) =>
+                setNewPharmacist({ ...newPharmacist, name: e.target.value })
+              }
+            />
+            <Input
+              type="email"
+              placeholder="Email"
+              value={newPharmacist.email}
+              onChange={(e) =>
+                setNewPharmacist({ ...newPharmacist, email: e.target.value })
+              }
+            />
+            <PasswordInput
               value={newPharmacist.password}
+              show={showPharmacistPassword}
+              toggle={() => setShowPharmacistPassword((p) => !p)}
               onChange={(e) =>
                 setNewPharmacist({ ...newPharmacist, password: e.target.value })
               }
-              className="pr-10"
             />
-            <button
-              type="button"
-              onClick={() => setShowPharmacistPassword((p) => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white"
-            >
-              {showPharmacistPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-        </FormCard>
-      </div>
+          </FormCard>
+        </div>
 
-      {/* 📋 Tables */}
-      <ResponsiveTable
-        title="Registered Users"
-        headers={["Name", "Email", "Phone"]}
-        tableRows={users.map((u) => (
-          <tr key={u._id}>
-            <td className="p-3">{u.name}</td>
-            <td className="p-3">{u.email}</td>
-            <td className="p-3">{u.phone || "—"}</td>
-          </tr>
-        ))}
-        mobileCards={users.map((u) => (
-          <div
-            key={u._id}
-            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
-          >
-            <p className="font-semibold">{u.name}</p>
-            <p className="text-sm text-gray-600 break-all">{u.email}</p>
-            <p className="text-sm mt-1">📞 {u.phone || "—"}</p>
-          </div>
-        ))}
-      />
+        {/* TABLES */}
+        {/* ================= DESKTOP / TABLET ================= */}
+        <div className="hidden sm:block">
+          {activeTab === "users" && (
+            <ResponsiveTable
+              title="Registered Users"
+              headers={["Name", "Email", "Phone"]}
+              tableRows={users.map((u) => (
+                <tr key={u._id}>
+                  <td className="p-3">{u.name}</td>
+                  <td className="p-3">{u.email}</td>
+                  <td className="p-3">{u.phone || "—"}</td>
+                </tr>
+              ))}
+              mobileCards={[]}
+            />
+          )}
 
-      <ResponsiveTable
-        title="Blood Requests"
-        headers={["Email", "Blood Group", "Status"]}
-        tableRows={requests.map((r) => (
-          <tr key={r._id}>
-            <td className="p-3">{r.requester || "—"}</td>
-            <td className="p-3">{r.group}</td>
-            <td className="p-3">{r.status}</td>
-          </tr>
-        ))}
-        mobileCards={requests.map((r) => (
-          <div
-            key={r._id}
-            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
-          >
-            <p className="font-semibold">Email: {r.requester || "—"}</p>
-            <p className="font-semibold">Blood Group: {r.group}</p>
-            <p className="text-sm mt-1">Status: {r.status}</p>
-          </div>
-        ))}
-      />
+          {activeTab === "requests" && (
+            <ResponsiveTable
+              title="Blood Requests"
+              headers={["Email", "Blood Group", "Status"]}
+              tableRows={requests.map((r) => (
+                <tr key={r._id}>
+                  <td className="p-3">{r.requester || "—"}</td>
+                  <td className="p-3">{r.group}</td>
+                  <td className="p-3">{r.status}</td>
+                </tr>
+              ))}
+              mobileCards={[]}
+            />
+          )}
 
-      <ResponsiveTable
-        title="Pharmacists"
-        headers={["Name", "Email", "Action"]}
-        tableRows={pharmacists.map((p) => (
-          <tr key={p._id}>
-            <td className="p-3">{p.name}</td>
-            <td className="p-3">{p.email}</td>
-            <td className="p-3">
-              <button
-                onClick={() => deletePharmacist(p._id)}
-                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        ))}
-        mobileCards={pharmacists.map((p) => (
-          <div
-            key={p._id}
-            className="bg-[#1e293b] text-white rounded-lg p-4 shadow-sm"
-          >
-            <p className="font-semibold">{p.name}</p>
-            <p className="text-sm text-gray-600 break-all">{p.email}</p>
-            <button
-              onClick={() => deletePharmacist(p._id)}
-              className="mt-2 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
-      />
+          {activeTab === "pharmacists" && (
+            <ResponsiveTable
+              title="Pharmacists"
+              headers={["Name", "Email", "Action"]}
+              tableRows={pharmacists.map((p) => (
+                <tr key={p._id} >
+                  <td className="p-3">{p.name}</td>
+                  <td className="p-3">{p.email}</td>
+                  <td className="p-3">
+                    <button
+                      onClick={() => deletePharmacist(p._id)}
+                      className="bg-red-600 px-3 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              mobileCards={[]}
+            />
+          )}
+        </div>
+        {/* ================= MOBILE ================= */}
+        <div className="sm:hidden space-y-8">
+          {/* USERS */}
+          <ResponsiveTable
+            title="Registered Users"
+            headers={[]}
+            tableRows={[]}
+            mobileCards={users.map((u) => (
+              <div key={u._id} className=" p-4 border rounded">
+                <p className="font-semibold">{u.name}</p>
+                <p className="text-sm break-all">{u.email}</p>
+                <p className="text-sm">📞 {u.phone || "—"}</p>
+              </div>
+            ))}
+          />
+
+          {/* BLOOD REQUESTS */}
+          <ResponsiveTable
+            title="Blood Requests"
+            headers={[]}
+            tableRows={[]}
+            mobileCards={requests.map((r) => (
+              <div key={r._id} className=" p-4 border rounded">
+                <p>Email: {r.requester || "—"}</p>
+                <p>Blood Group: {r.group}</p>
+                <p>Status: {r.status}</p>
+              </div>
+            ))}
+          />
+
+          {/* PHARMACISTS */}
+          <ResponsiveTable
+            title="Pharmacists"
+            headers={[]}
+            tableRows={[]}
+            mobileCards={pharmacists.map((p) => (
+              <div key={p._id} className=" p-4 border rounded">
+                <p className="font-semibold">{p.name}</p>
+                <p className="text-sm break-all">{p.email}</p>
+                <button
+                  onClick={() => deletePharmacist(p._id)}
+                  className="mt-2 bg-red-600 px-3 py-1 rounded"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          />
+        </div>
+      </main>
     </div>
   );
 }
 
-/* ------------------ UI Components ------------------ */
+/* ================= REUSABLE ================= */
+
 const StatCard = ({ title, count }) => (
-  <div className="bg-[#1e293b] text-white p-4 sm:p-6 rounded-xl shadow">
-    <h3 className="text-gray-500 text-sm sm:text-base">{title}</h3>
-    <p className="text-2xl sm:text-3xl font-bold">{count}</p>
+  <div className="bg-white p-4 rounded shadow">
+    <p className="text-gray-500 text-sm">{title}</p>
+    <p className="text-2xl font-bold">{count}</p>
   </div>
 );
 
 const FormCard = ({ title, children, onSubmit }) => (
-  <form
-    onSubmit={onSubmit}
-    className="bg-[#1e293b] text-white p-4 sm:p-6 rounded-xl shadow space-y-4"
-  >
-    <h2 className="text-lg sm:text-xl font-semibold ">{title}</h2>
+  <form onSubmit={onSubmit} className="bg-white p-4 rounded shadow space-y-4">
+    <h2 className="font-semibold">{title}</h2>
     {children}
-    <button className="w-full sm:w-auto bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 transition">
-      Create
-    </button>
+    <button className="bg-blue-600 text-white px-4 py-2 rounded">Create</button>
   </form>
 );
 
 const Input = (props) => (
-  <input
-    {...props}
-    className="border bg-[#1e293b] text-white w-full p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-    required
-  />
+  <input {...props} required className="border w-full p-2 rounded" />
+);
+
+const PasswordInput = ({ value, onChange, show, toggle }) => (
+  <div className="relative">
+    <input
+      type={show ? "password" : "text"}
+      value={value}
+      onChange={onChange}
+      className="border w-full p-2 rounded pr-10"
+      required
+    />
+    <button
+      type="button"
+      onClick={toggle}
+      className="absolute right-3 top-1/2 -translate-y-1/2"
+    >
+      {show ? <EyeOff size={18} /> : <Eye size={18} />}
+    </button>
+  </div>
 );
 
 const ResponsiveTable = ({ title, headers, tableRows, mobileCards }) => (
-  <div className="bg-[#1e293b] text-white rounded-xl shadow mb-8 sm:mb-10">
-    <h2 className="text-lg sm:text-xl font-semibold p-4">{title}</h2>
+  <div className="bg-white rounded shadow mb-8">
+    <h2 className="font-semibold p-4">{title}</h2>
 
-    {/* Desktop Table */}
-    <div className="hidden sm:block overflow-x-auto ">
+    <div className="hidden sm:block overflow-x-auto">
       <table className="min-w-full border-t">
-        <thead className="bg-[#1e293b] text-white ">
+        <thead className="bg-gray-100">
           <tr>
             {headers.map((h) => (
               <th key={h} className="text-left p-3">
@@ -327,11 +374,10 @@ const ResponsiveTable = ({ title, headers, tableRows, mobileCards }) => (
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y">{tableRows}</tbody>
+        <tbody>{tableRows}</tbody>
       </table>
     </div>
 
-    {/* Mobile Cards */}
     <div className="sm:hidden space-y-3 p-4">{mobileCards}</div>
   </div>
 );

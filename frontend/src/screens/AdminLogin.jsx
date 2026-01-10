@@ -36,7 +36,7 @@ export default function AdminLogin() {
 
   return (
     <div className="flex h-screen justify-center items-center bg-[#2b3c64]">
-      <div style={{ backgroundImage: `url(${logo})` }} className=" bg-center rounded-3xl shadow-xl shadow-blue-400 ">
+      <div style={{ backgroundImage: `url(${logo})`}} className=" bg-center rounded-3xl shadow-xl shadow-blue-400 ">
         <form
           onSubmit={handleLogin}
           className="bg-white p-8 rounded-2xl shadow-md w-96 opacity-95"
