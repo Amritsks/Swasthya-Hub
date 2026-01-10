@@ -138,7 +138,7 @@ const UserDashboard = ({ user }) => {
             <div
               key={index}
               onClick={() => navigate(card.route)}
-              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg cursor-pointer transition flex flex-col items-center gap-4 hover:-translate-y-1 hover:bg-slate-400"
+              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg cursor-pointer transition flex flex-col items-center gap-4 hover:-translate-y-1 hover:bg-green-300"
             >
               <div className={`${card.color} p-4 rounded-full `}>
                 {card.icon}
