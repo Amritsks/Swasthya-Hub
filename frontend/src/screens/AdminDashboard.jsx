@@ -84,25 +84,45 @@ export default function AdminDashboard() {
 
   const createAdmin = async (e) => {
     e.preventDefault();
-    await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/admin/register`,
-      newAdmin
-    );
-    setNewAdmin({ email: "", password: "" });
-    alert("Admin created");
+
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin/register`,
+        newAdmin
+      );
+
+      alert("Admin created");
+      setNewAdmin({ email: "", password: "" });
+    } catch (err) {
+      if (err.response?.status === 409) {
+        alert("Admin exists");
+      } else {
+        alert("Failed to create admin");
+      }
+    }
   };
 
   const createPharmacist = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("adminToken");
-    await axios.post(
-      `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacist`,
-      newPharmacist,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setNewPharmacist({ name: "", email: "", password: "" });
-    fetchAll();
-    alert("Pharmacist created");
+
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/admin-panel/pharmacist`,
+        newPharmacist,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert("Pharmacist created");
+      setNewPharmacist({ name: "", email: "", password: "" });
+      fetchAll();
+    } catch (err) {
+      if (err.response?.status === 409) {
+        alert("Pharmacist exists");
+      } else {
+        alert("Failed to create pharmacist");
+      }
+    }
   };
 
   const deletePharmacist = async (id) => {
@@ -292,7 +312,10 @@ export default function AdminDashboard() {
             headers={[]}
             tableRows={[]}
             mobileCards={users.map((u) => (
-              <div key={u._id} className=" p-4 border rounded shadow-md shadow-blue-300">
+              <div
+                key={u._id}
+                className=" p-4 border rounded shadow-md shadow-blue-300"
+              >
                 <p className="font-semibold">{u.name}</p>
                 <p className="text-sm break-all">{u.email}</p>
                 <p className="text-sm">📞 {u.phone || "—"}</p>
@@ -306,7 +329,10 @@ export default function AdminDashboard() {
             headers={[]}
             tableRows={[]}
             mobileCards={requests.map((r) => (
-              <div key={r._id} className=" p-4 border rounded shadow-md shadow-blue-300">
+              <div
+                key={r._id}
+                className=" p-4 border rounded shadow-md shadow-blue-300"
+              >
                 <p>Email: {r.requester || "—"}</p>
                 <p>Blood Group: {r.group}</p>
                 <p>Status: {r.status}</p>
@@ -320,7 +346,10 @@ export default function AdminDashboard() {
             headers={[]}
             tableRows={[]}
             mobileCards={pharmacists.map((p) => (
-              <div key={p._id} className=" p-4 border rounded shadow-md shadow-blue-300">
+              <div
+                key={p._id}
+                className=" p-4 border rounded shadow-md shadow-blue-300"
+              >
                 <p className="font-semibold">{p.name}</p>
                 <p className="text-sm break-all">{p.email}</p>
                 <button

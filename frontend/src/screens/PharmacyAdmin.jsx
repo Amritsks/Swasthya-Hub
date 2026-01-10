@@ -198,7 +198,7 @@ const PharmacyAdmin = () => {
       {/* Main */}
       <div className="flex-1 ml-0 md:ml-64 pt-4">
         <div className="flex justify-center">
-          <div className="h-16 w-72 bg-gray-200 border-b flex items-center justify-center rounded-md shadow-xl shadow-green-500 font-bold">
+          <div className="h-16 w-72 bg-gray-200 border-b flex items-center justify-center rounded-md shadow-xl shadow-green-700 font-bold">
             Welcome, {pharmacistName}
           </div>
         </div>
@@ -207,7 +207,7 @@ const PharmacyAdmin = () => {
           {prescriptions.map((p) => (
             <div
               key={p._id}
-              className="bg-gray-200 shadow-xl shadow-green-500 p-4 rounded"
+              className="bg-gray-200 shadow-xl shadow-green-700 p-4 rounded"
             >
               <p className="text-xs text-gray-500">
                 {p.type === "manual"
